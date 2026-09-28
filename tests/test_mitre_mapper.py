@@ -2,7 +2,7 @@
 Unit Tests for src.mitre_mapper
 """
 import unittest
-from src.mitre_mapper import MITREStage, MITREMapper
+from ml.mitre_mapper import MITREStage, MITREMapper
 
 
 class TestMITREMapper(unittest.TestCase):

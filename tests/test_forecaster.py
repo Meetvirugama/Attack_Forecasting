@@ -4,8 +4,8 @@ Unit Tests for src.forecaster (KStepForecaster)
 import unittest
 import numpy as np
 import torch
-from src.world_model_core import WorldModelDynamics
-from src.forecaster import KStepForecaster
+from ml.world_model_core import WorldModelDynamics
+from ml.forecaster import KStepForecaster
 
 
 class TestKStepForecaster(unittest.TestCase):

@@ -22,7 +22,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Attack Forecasting Team",
     python_requires=">=3.10",
-    packages=find_packages(exclude=["tests*", "scripts*", "data*", "models*", "results*"]),
+    packages=find_packages(exclude=["tests*", "scripts*", "data*", "models*", "results*", "docs*"]),
     install_requires=[
         "numpy>=1.24.0",
         "pandas>=2.0.0",

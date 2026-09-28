@@ -14,7 +14,7 @@ import logging
 from pathlib import Path
 
 # ── Project Root ────────────────────────────────────────────────────────────
-# config.py lives in app/, so root is one level up
+# config.py lives in config/, so root is one level up
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ── Core Directory Paths ─────────────────────────────────────────────────────
@@ -26,8 +26,9 @@ MITRE_DATA_DIR     = DATA_DIR / "mitre"
 MODELS_DIR   = BASE_DIR / "models"
 LOGS_DIR     = BASE_DIR / "logs"
 RESULTS_DIR  = BASE_DIR / "results"
-SRC_DIR      = BASE_DIR / "src"
-APP_DIR      = BASE_DIR / "app"
+ML_DIR       = BASE_DIR / "ml"
+BACKEND_DIR  = BASE_DIR / "backend"
+CONFIG_DIR   = BASE_DIR / "config"
 FRONTEND_DIR = BASE_DIR / "frontend"
 
 # Auto-create writable directories (data/raw and frontend are pre-populated)

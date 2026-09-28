@@ -33,7 +33,7 @@ DATA_DIR = ROOT_DIR / "data"
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from src import (
+from ml import (
     MITREStage,
     MITREMapper,
     WorldModelDynamics,
@@ -285,7 +285,7 @@ class ModelService:
         df.columns = df.columns.str.strip()
 
         # Extract real state sequence using aggregator
-        from src import NetworkStateAggregator
+        from ml import NetworkStateAggregator
         agg = NetworkStateAggregator(window_size=20, sequence_length=10)
 
         # Keep a representative slice around the attack

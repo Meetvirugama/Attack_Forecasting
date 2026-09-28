@@ -56,6 +56,6 @@ dist/
 build/
 *.egg-info/
 
-# Legacy Backend Directory (now replaced by src/ + app/)
-# Kept in repo for reference — remove this line to include it
-backend/
+
+
+

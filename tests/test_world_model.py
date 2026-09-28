@@ -4,7 +4,7 @@ Unit Tests for src.world_model_core (WorldModelDynamics)
 import unittest
 import torch
 import numpy as np
-from src.world_model_core import WorldModelDynamics
+from ml.world_model_core import WorldModelDynamics
 
 
 class TestWorldModelDynamics(unittest.TestCase):
