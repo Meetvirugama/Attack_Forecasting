@@ -28,13 +28,13 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from ml import (
-    NetworkStateAggregator,
-    WorldModelDynamics,
-    WorldModelTrainer,
-    KStepForecaster,
-    TemporalExplainer,
-    WorldModelBenchmark,
-    MITREMapper,
+    TrafficAnalyzer,
+    ThreatPredictor,
+    ThreatTrainer,
+    RiskForecaster,
+    FeatureInsight,
+    ModelComparison,
+    ThreatStageMapper,
 )
 
 # ── Directory Setup ────────────────────────────────────────────────────────────
@@ -124,7 +124,7 @@ def main() -> None:
     df = load_dataset(max_samples_per_file=50_000)
 
     # 2. State Aggregation & Multi-Scale Feature Engineering ──────────────────
-    aggregator = NetworkStateAggregator(window_size=20, sequence_length=10)
+    aggregator = TrafficAnalyzer(window_size=20, sequence_length=10)
     X_seq, y_next_state, y_stages = aggregator.fit_transform(df)
     logger.info(f"Extracted {len(X_seq):,} autoregressive sequences (10 timesteps × 30 features)")
 
@@ -140,7 +140,7 @@ def main() -> None:
     logger.info(f"Split sizes — Train: {len(X_train):,} | Val: {len(X_val):,} | Test: {len(X_test):,}")
 
     # 4. Model Instantiation & Training ───────────────────────────────────────
-    model = WorldModelDynamics(
+    model = ThreatPredictor(
         input_dim=30,
         hidden_dim=128,
         num_mitre_stages=6,
@@ -148,7 +148,7 @@ def main() -> None:
         dropout=0.2,
     )
 
-    trainer = WorldModelTrainer(model=model, lr=3e-3)
+    trainer = ThreatTrainer(model=model, lr=3e-3)
 
     history = trainer.fit(
         X_train=X_train,
@@ -173,7 +173,7 @@ def main() -> None:
     X_flat_train = X_train[:, -1, :]
     X_flat_test  = X_test[:, -1, :]
 
-    benchmark = WorldModelBenchmark(world_model=model)
+    benchmark = ModelComparison(world_model=model)
     results_df = benchmark.run_benchmark(
         X_seq_test=X_test,
         y_stage_test=y_test_st,

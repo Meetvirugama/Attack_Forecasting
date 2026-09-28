@@ -1,330 +1,657 @@
 /**
- * AI Network Attack Forecasting — Client Application
- * Handles navigation, dynamic API telemetry fetching, forward simulation, and SVG charts.
+ * CyberLens — Frontend Application
+ * Fetches data from the local REST API and renders all 6 dashboard tabs.
+ * Written in plain ES6 JavaScript — no external libraries required.
  */
 
-// ── NAVIGATION HANDLER ──
-const navItems = document.querySelectorAll('.nav-item');
-const pages = document.querySelectorAll('.page');
+const API = 'http://localhost:8000/api';
 
-navItems.forEach(item => {
-  item.addEventListener('click', () => {
-    navItems.forEach(n => n.classList.remove('active'));
-    pages.forEach(p => p.classList.remove('active'));
-    item.classList.add('active');
-    const target = document.getElementById('page-' + item.dataset.page);
-    if (target) target.classList.add('active');
-  });
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let currentScenario = 'infiltration';
+let overviewData    = null;
+let forecastData    = null;
+let explainData     = null;
+let mitreData       = null;
+let benchmarkData   = null;
+
+// ── BOOT ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  startClock();
+  refreshAll();
 });
 
-// ── LIVE CLOCK ──
-function updateClock() {
-  const now = new Date();
-  const t = now.toTimeString().split(' ')[0] + ' IST';
-  const el = document.getElementById('live-clock');
-  if (el) el.textContent = t;
-  const dt = document.getElementById('dossier-time');
-  if (dt) dt.textContent = t;
-}
-setInterval(updateClock, 1000);
-updateClock();
-
-// ── API SERVICE & DYNAMIC DATA BINDING ──
-const API = {
-  async get(endpoint) {
-    try {
-      const res = await fetch(`/api/${endpoint}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (e) {
-      console.warn(`API get /api/${endpoint} failed:`, e);
-      return null;
-    }
-  },
-  async post(endpoint, data) {
-    try {
-      const res = await fetch(`/api/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (e) {
-      console.warn(`API post /api/${endpoint} failed:`, e);
-      return null;
-    }
-  }
-};
-
-// ── 01 FETCH THREAT OVERVIEW ──
-async function loadThreatOverview() {
-  const data = await API.get('threat-overview');
-  if (!data) return;
-
-  const probEl = document.getElementById('prob-val');
-  if (probEl) probEl.innerHTML = `${data.infiltration_probability}<span>%</span>`;
-
-  const statusEl = document.getElementById('threat-status');
-  if (statusEl) {
-    statusEl.textContent = `⚠ ${data.threat_level}`;
-    statusEl.className = data.threat_level === 'HIGH RISK' ? 'th-status' : 'th-status ok';
-  }
-
-  const horizonEl = document.getElementById('fcst-horizon');
-  if (horizonEl) horizonEl.textContent = data.forecast_horizon;
-
-  const leadEl = document.getElementById('lead-time-sub');
-  if (leadEl) leadEl.textContent = `+${data.lead_time_seconds}s ADVANCE`;
-
-  const flowEl = document.getElementById('flow-count');
-  if (flowEl) flowEl.textContent = Number(data.active_flows).toLocaleString();
-
-  const synEl = document.getElementById('syn-ack-ratio');
-  if (synEl) synEl.textContent = `${data.syn_ack_ratio}×`;
-
-  const confEl = document.getElementById('model-conf');
-  if (confEl) confEl.innerHTML = `${data.model_confidence}<span style="font-size:20px">%</span>`;
+function startClock() {
+  const el = document.getElementById('headerTime');
+  const tick = () => {
+    const now = new Date();
+    el.textContent = now.toLocaleTimeString('en-GB', { hour12: false });
+  };
+  tick();
+  setInterval(tick, 1000);
 }
 
-// ── 03 FETCH FORECAST TIMELINE ──
-async function loadForecastTimeline() {
-  const data = await API.get('forecast?k=5');
-  if (!data || !data.predicted) return;
+// ── TAB SWITCHING ─────────────────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
 
-  // Render K-step table
-  const tbody = document.getElementById('kstep-tbody');
-  if (tbody) {
-    tbody.innerHTML = data.predicted.map(p => `
-      <tr class="${p.prob > 75 ? 'row-high' : 'row-med'}">
-        <td>k = ${p.step}</td>
-        <td>+${p.offset_seconds}s</td>
-        <td>${p.stage}</td>
-        <td class="risk-high">${p.prob}%</td>
-        <td>TA0008</td>
-        <td><span class="risk-badge h">${p.risk_level}</span></td>
-        <td>+${p.offset_seconds}s</td>
-      </tr>
-    `).join('');
-  }
-}
-
-// ── 07 FETCH EXPLAINABILITY (SHAP & ATTENTION) ──
-async function loadExplainability() {
-  const data = await API.get('explainability');
-  if (!data || !data.top_features) return;
-
-  const fr = document.getElementById('feature-rows');
-  if (fr) {
-    const maxVal = Math.max(...data.top_features.map(f => Math.abs(f.importance))) || 1.0;
-    fr.innerHTML = data.top_features.map((f, i) => {
-      const pct = (Math.abs(f.importance) / maxVal * 85).toFixed(1);
-      const isPos = f.importance >= 0;
-      const cls = isPos ? 'positive' : 'negative';
-      const sign = isPos ? '+' : '';
-      return `
-        <div class="feature-row">
-          <div class="fr-rank">${String(i + 1).padStart(2, '0')}</div>
-          <div class="fr-name">${f.feature.replace(/_/g, ' ').toUpperCase()}</div>
-          <div class="fr-bar-wrap"><div class="fr-bar ${cls}" style="width:${pct}%"></div></div>
-          <div class="fr-val ${cls}">${sign}${f.importance.toFixed(2)}</div>
-          <div class="fr-type">${f.category}</div>
-        </div>
-      `;
-    }).join('');
-  }
-}
-
-// ── 08 SIMULATION HANDLER ──
-function updateSim() {
-  document.getElementById('sim-syn-val').textContent = document.getElementById('sim-syn').value;
-  document.getElementById('sim-entropy-val').textContent = document.getElementById('sim-entropy').value;
-  document.getElementById('sim-k-val').textContent = document.getElementById('sim-k').value + ' steps';
-}
-
-async function runSimulation() {
-  const btn = document.getElementById('sim-run-btn');
-  const res = document.getElementById('sim-result');
-  btn.classList.add('running');
-  btn.textContent = 'RUNNING FORWARD ROLLOUT ON PYTORCH MODEL...';
-
-  const syn = parseFloat(document.getElementById('sim-syn').value);
-  const entropy = parseFloat(document.getElementById('sim-entropy').value);
-  const k = parseInt(document.getElementById('sim-k').value);
-
-  const data = await API.post('simulate', {
-    syn_rate: syn,
-    port_entropy: entropy,
-    k_steps: k
+  // Set active nav icon
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    const icon = b.querySelector('.nav-icon');
+    if (icon) icon.textContent = b.classList.contains('active') ? '◈' : '⬡';
   });
 
-  btn.classList.remove('running');
-  btn.textContent = '▶ RUN K-STEP PREDICTION';
+  // Lazy-draw charts when tab becomes visible
+  if (name === 'forecast' && forecastData)   drawForecastChart(forecastData);
+  if (name === 'explain'  && explainData)    drawFeatureChart(explainData);
+  if (name === 'compare'  && benchmarkData)  drawCompareChart(benchmarkData);
+}
 
-  if (data && data.trajectory) {
-    const seqStr = data.trajectory.map(t => `k${t.step}=${t.prob_pct}% (${t.stage})`).join(' → ');
-    res.innerHTML = `<strong>PREDICTED TRAJECTORY:</strong> ${seqStr} &nbsp;|&nbsp; <span style="color:var(--red);font-weight:700">PEAK RISK: ${data.peak_risk_pct}%</span>`;
-  } else {
-    res.textContent = 'Simulation complete.';
+// ── SCENARIO SWITCHING ────────────────────────────────────────────────────────
+function loadScenario(name) {
+  currentScenario = name;
+  document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + name).classList.add('active');
+  setStatus('LOADING...', false);
+  refreshAll();
+}
+
+// ── REFRESH ALL DATA ──────────────────────────────────────────────────────────
+async function refreshAll() {
+  setStatus('LOADING...', false);
+
+  try {
+    // Load scenario first, then refresh overview / forecast / explain concurrently
+    const scenarioRes = await fetchJson(`${API}/scenario?name=${currentScenario}`);
+    if (scenarioRes.error) throw new Error(scenarioRes.error);
+
+    overviewData = scenarioRes.overview;
+    forecastData = scenarioRes.forecast;
+    explainData  = scenarioRes.explainability;
+
+    renderOverview(overviewData);
+    renderForecast(forecastData);
+    renderExplain(explainData);
+
+    // MITRE & benchmark can load independently
+    const tactic = overviewData?.mitre_tactic_current || 'TA0001';
+    [mitreData, benchmarkData] = await Promise.all([
+      fetchJson(`${API}/mitre?tactic=${tactic}`),
+      fetchJson(`${API}/benchmark`)
+    ]);
+
+    renderKillChain(mitreData, overviewData);
+    renderBenchmark(benchmarkData);
+
+    setStatus('LIVE', true);
+  } catch (err) {
+    console.warn('API error:', err);
+    setStatus('OFFLINE — using demo data', false);
+    loadDemoData();
   }
 }
 
-// ── 06 FETCH MITRE DATA ──
-async function loadMitreData(tacticId = 'TA0001') {
-  const data = await API.get(`mitre?tactic=${tacticId}`);
-  if (!data) return;
+// ── STATUS ────────────────────────────────────────────────────────────────────
+function setStatus(text, ok) {
+  document.getElementById('statusText').textContent = text;
+  const dot = document.getElementById('statusDot');
+  dot.style.background    = ok ? 'var(--green)' : 'var(--amber)';
+  dot.style.boxShadow     = ok ? '0 0 8px var(--green)' : '0 0 8px var(--amber)';
+}
 
-  const nextContainer = document.getElementById('mitre-next-steps');
-  if (nextContainer && data.next_tactics) {
-    nextContainer.innerHTML = data.next_tactics.map(n => `
-      <div style="margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px">
-          <strong>${n.tactic_name}</strong>
-          <span>${(n.probability * 100).toFixed(1)}% (${n.transition_count}x)</span>
-        </div>
-        <div style="background:var(--cream-3);height:6px;margin-top:3px">
-          <div style="background:var(--red);height:100%;width:${(n.probability * 100).toFixed(1)}%"></div>
-        </div>
-      </div>
-    `).join('');
+// ── FETCH HELPER ──────────────────────────────────────────────────────────────
+async function fetchJson(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+// ── OVERVIEW ──────────────────────────────────────────────────────────────────
+function renderOverview(d) {
+  if (!d) return;
+
+  const risk = d.infiltration_probability ?? 0;
+  document.getElementById('riskVal').textContent  = risk.toFixed(1) + '%';
+  document.getElementById('riskBar').style.width  = Math.min(risk, 100) + '%';
+
+  document.getElementById('stageVal').textContent    = d.current_stage    ?? '—';
+  document.getElementById('nextStageVal').textContent = 'Next → ' + (d.predicted_next_stage ?? '—');
+  document.getElementById('leadVal').textContent     = (d.lead_time_seconds ?? '—') + 's';
+  document.getElementById('flowsVal').textContent    = (d.active_flows ?? '—').toLocaleString();
+  document.getElementById('suspiciousVal').textContent = (d.suspicious_nodes ?? '—') + ' suspicious nodes';
+
+  document.getElementById('overviewCaseId').textContent = 'CASE: ' + (d.case_id ?? 'CL-0001');
+
+  document.getElementById('mStatus').textContent   = d.status      ?? '—';
+  document.getElementById('mModel').textContent    = d.model_name  ?? '—';
+  document.getElementById('mDataset').textContent  = d.dataset     ?? '—';
+  document.getElementById('mConf').textContent     = (d.model_confidence ?? '—') + '%';
+  document.getElementById('mTacticNow').textContent  = d.mitre_tactic_current  ?? '—';
+  document.getElementById('mTacticNext').textContent = d.mitre_tactic_predicted ?? '—';
+  document.getElementById('mSynAck').textContent   = d.syn_ack_ratio ?? '—';
+  document.getElementById('mHorizon').textContent  = d.forecast_horizon ?? '—';
+
+  // Campaigns
+  const campaigns = d.observed_campaigns ?? [];
+  document.getElementById('campaignList').innerHTML = campaigns.length
+    ? campaigns.map(c => `<div class="campaign-tag">${c}</div>`).join('')
+    : '<span class="muted">—</span>';
+
+  // Threat meter
+  document.getElementById('threatFill').style.width = Math.min(risk, 100) + '%';
+  const threatLevel = d.threat_level ?? 'LOW';
+  const tagEl = document.getElementById('threatTag');
+  tagEl.textContent = threatLevel;
+  tagEl.style.color = risk > 70 ? 'var(--red)' : risk > 40 ? 'var(--amber)' : 'var(--green-dim)';
+  tagEl.style.borderColor = tagEl.style.color;
+}
+
+// ── FORECAST ──────────────────────────────────────────────────────────────────
+function renderForecast(d) {
+  if (!d) return;
+
+  document.getElementById('fcLeadTime').textContent = (d.lead_time_seconds ?? '—') + 's';
+  document.getElementById('fcPeakRisk').textContent = (d.max_risk_score ?? '—') + '%';
+
+  // Historical list
+  const histEl = document.getElementById('histList');
+  histEl.innerHTML = (d.historical ?? []).map(h =>
+    `<div class="step-row">
+       <span class="step-time">${h.time}</span>
+       <span class="step-stage">${h.stage}</span>
+       <span class="step-risk">${h.prob.toFixed(1)}%</span>
+     </div>`
+  ).join('');
+
+  // Predicted list
+  const predEl = document.getElementById('predList');
+  predEl.innerHTML = (d.predicted ?? []).map(p =>
+    `<div class="step-row predicted">
+       <span class="step-time">${p.time_label}</span>
+       <span class="step-stage">${p.stage}</span>
+       <span class="step-risk">${p.prob}%</span>
+     </div>`
+  ).join('');
+
+  // Draw chart if tab is active
+  const panel = document.getElementById('tab-forecast');
+  if (panel.classList.contains('active')) drawForecastChart(d);
+}
+
+function drawForecastChart(d) {
+  const canvas = document.getElementById('forecastChart');
+  const ctx = canvas.getContext('2d');
+  canvas.width  = canvas.offsetWidth  * window.devicePixelRatio;
+  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+  const W = canvas.offsetWidth, H = canvas.offsetHeight;
+  const PAD = { top: 20, right: 20, bottom: 36, left: 50 };
+  const plotW = W - PAD.left - PAD.right;
+  const plotH = H - PAD.top  - PAD.bottom;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const hist = (d.historical ?? []).map(h => h.prob);
+  const pred = (d.predicted  ?? []).map(p => p.prob);
+  const allPts = [...hist, ...pred];
+  const labels = [
+    ...(d.historical ?? []).map(h => h.time),
+    ...(d.predicted  ?? []).map(p => p.time_label)
+  ];
+
+  const minY = 0, maxY = 105;
+  const toX  = i => PAD.left + (i / (allPts.length - 1)) * plotW;
+  const toY  = v => PAD.top  + (1 - (v - minY) / (maxY - minY)) * plotH;
+
+  // Grid
+  ctx.strokeStyle = '#1f3320';
+  ctx.lineWidth = 1;
+  for (let y = 0; y <= 100; y += 25) {
+    const py = toY(y);
+    ctx.beginPath();
+    ctx.moveTo(PAD.left, py);
+    ctx.lineTo(PAD.left + plotW, py);
+    ctx.stroke();
+    ctx.fillStyle = '#3a5a3a';
+    ctx.font = '10px JetBrains Mono';
+    ctx.fillText(y + '%', PAD.left - 36, py + 4);
   }
+
+  // NOW divider
+  const nowX = toX(hist.length - 1);
+  ctx.strokeStyle = '#3a5a3a';
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(nowX, PAD.top);
+  ctx.lineTo(nowX, PAD.top + plotH);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#3a5a3a';
+  ctx.font = '9px JetBrains Mono';
+  ctx.fillText('NOW', nowX + 4, PAD.top + 10);
+
+  // Historical line (green)
+  if (hist.length > 0) {
+    ctx.strokeStyle = '#00c832';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = '#00ff41';
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    hist.forEach((v, i) => {
+      const x = toX(i), y = toY(v);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Dots
+    hist.forEach((v, i) => {
+      ctx.beginPath();
+      ctx.arc(toX(i), toY(v), 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#00c832';
+      ctx.fill();
+    });
+  }
+
+  // Predicted line (red dashed)
+  if (pred.length > 0) {
+    const offset = hist.length - 1;
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 3]);
+    ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    [hist[hist.length - 1], ...pred].forEach((v, i) => {
+      const x = toX(offset + i), y = toY(v);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
+
+    pred.forEach((v, i) => {
+      ctx.beginPath();
+      ctx.arc(toX(offset + i + 1), toY(v), 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#ef4444';
+      ctx.fill();
+    });
+  }
+
+  // X labels
+  ctx.fillStyle = '#3a5a3a';
+  ctx.font = '9px JetBrains Mono';
+  labels.forEach((lbl, i) => {
+    if (i % 2 === 0 || i === labels.length - 1) {
+      ctx.fillText(lbl, toX(i) - 10, PAD.top + plotH + 16);
+    }
+  });
+
+  // Legend
+  ctx.fillStyle = '#00c832'; ctx.fillRect(W - 150, 8, 12, 3);
+  ctx.fillStyle = '#6b9b6b'; ctx.font = '9px JetBrains Mono';
+  ctx.fillText('Observed', W - 134, 12);
+  ctx.fillStyle = '#ef4444'; ctx.fillRect(W - 60, 8, 12, 3);
+  ctx.fillText('AI Forecast', W - 44, 12);
 }
 
-// ── 09 FETCH BENCHMARK DATA ──
-async function loadBenchmark() {
-  const data = await API.get('benchmark');
-  if (!data || !data.models) return;
-  console.log('Loaded benchmark models:', data.models);
-}
-
-// ── 05 TRAFFIC FLOWS FILTER ──
-const flows = [
-  { ts:'14:31:42.103', src:'10.0.2.15', dst:'192.168.1.42', port:'445', proto:'TCP', flags:'SYN', pkts:12, bytes:'1,440', dur:'0.24s', risk:'h', cat:'suspicious,tcp,high,scan' },
-  { ts:'14:31:42.229', src:'10.0.2.15', dst:'10.10.1.5', port:'445', proto:'TCP', flags:'SYN', pkts:8, bytes:'960', dur:'0.18s', risk:'h', cat:'suspicious,tcp,high,scan' },
-  { ts:'14:31:43.011', src:'192.168.1.42', dst:'10.10.1.20', port:'3306', proto:'TCP', flags:'SYN ACK', pkts:24, bytes:'3,200', dur:'1.2s', risk:'m', cat:'suspicious,tcp' },
-  { ts:'14:31:44.512', src:'10.0.2.15', dst:'10.10.1.21', port:'3306', proto:'TCP', flags:'SYN', pkts:6, bytes:'720', dur:'0.12s', risk:'h', cat:'suspicious,tcp,high,scan' },
-  { ts:'14:31:45.002', src:'10.10.2.5', dst:'8.8.8.8', port:'53', proto:'UDP', flags:'—', pkts:2, bytes:'128', dur:'0.04s', risk:'l', cat:'udp' },
-  { ts:'14:31:45.218', src:'192.168.1.10', dst:'10.0.2.15', port:'443', proto:'TCP', flags:'PSH ACK', pkts:45, bytes:'12,480', dur:'2.4s', risk:'m', cat:'suspicious,tcp' },
-  { ts:'14:31:46.001', src:'10.0.2.15', dst:'10.10.2.6', port:'445', proto:'TCP', flags:'SYN', pkts:9, bytes:'1,080', dur:'0.19s', risk:'h', cat:'suspicious,tcp,high,scan' },
-  { ts:'14:31:47.103', src:'10.10.2.5', dst:'10.10.1.5', port:'88', proto:'TCP', flags:'SYN', pkts:3, bytes:'360', dur:'0.08s', risk:'l', cat:'tcp' }
+// ── KILL CHAIN ────────────────────────────────────────────────────────────────
+const STAGES = [
+  { idx: 0, name: 'Normal',      tactic: '—'       },
+  { idx: 1, name: 'Recon',       tactic: 'TA0043'  },
+  { idx: 2, name: 'Init Access', tactic: 'TA0001'  },
+  { idx: 3, name: 'Lateral Mvt', tactic: 'TA0008'  },
+  { idx: 4, name: 'C2',          tactic: 'TA0011'  },
+  { idx: 5, name: 'Exfil',       tactic: 'TA0010'  },
 ];
 
-function renderFlows(filter = 'all') {
-  const tbody = document.getElementById('flow-tbody');
-  if (!tbody) return;
-  const filtered = flows.filter(f => filter === 'all' || f.cat.includes(filter));
-  tbody.innerHTML = filtered.map(f => `
-    <tr class="${f.risk === 'h' ? 'row-high' : (f.risk === 'm' ? 'row-med' : '')}">
-      <td>${f.ts}</td>
-      <td>${f.src}</td>
-      <td>${f.dst}</td>
-      <td>${f.port}</td>
-      <td>${f.proto}</td>
-      <td>${f.flags}</td>
-      <td>${f.pkts}</td>
-      <td>${f.bytes}</td>
-      <td>${f.dur}</td>
-      <td><span class="risk-badge ${f.risk}">${f.risk === 'h' ? 'HIGH' : (f.risk === 'm' ? 'MED' : 'LOW')}</span></td>
-    </tr>
-  `).join('');
+function renderKillChain(mitreD, overviewD) {
+  const currentTactic = overviewD?.mitre_tactic_current  ?? 'TA0001';
+  const nextTactic    = overviewD?.mitre_tactic_predicted ?? 'TA0008';
+
+  const stagesEl = document.getElementById('chainStages');
+  stagesEl.innerHTML = STAGES.map((s, i) => {
+    const isActive    = s.tactic === currentTactic;
+    const isPredicted = s.tactic === nextTactic;
+    const cls = isActive ? 'active' : isPredicted ? 'predicted' : '';
+    const arrow = i < STAGES.length - 1 ? '<span class="stage-arrow">→</span>' : '';
+    return `
+      <div class="stage-block">
+        <div class="stage-box ${cls}">
+          <div class="stage-idx">[${String(s.idx).padStart(2,'0')}]</div>
+          <div class="stage-name">${s.name}</div>
+          <div class="stage-tactic">${s.tactic}</div>
+        </div>
+        ${arrow}
+      </div>`;
+  }).join('');
+
+  if (!mitreD) return;
+
+  // Next tactics
+  const nextTactics = mitreD.next_tactics ?? [];
+  document.getElementById('nextTacticsList').innerHTML = nextTactics.slice(0, 6).map(t =>
+    `<div class="tactic-row">
+       <span class="tactic-id">${t.tactic_id ?? '—'}</span>
+       <span class="tactic-name">${t.name ?? '—'}</span>
+       <span class="tactic-prob">${((t.probability ?? 0) * 100).toFixed(0)}%</span>
+     </div>`
+  ).join('') || '<span class="muted">No data</span>';
+
+  // Forecast chains
+  const chains = mitreD.forecast_chains ?? [];
+  document.getElementById('forecastChains').innerHTML = chains.slice(0, 3).map((ch, i) => {
+    const steps = Array.isArray(ch.chain) ? ch.chain.join(' → ') : (ch.chain ?? '—');
+    const prob  = ((ch.probability ?? 0) * 100).toFixed(1);
+    return `<div class="chain-row">[${i+1}] ${steps} <span style="color:var(--amber);">(${prob}%)</span></div>`;
+  }).join('') || '<span class="muted">No data</span>';
+
+  // Context
+  const ctx = mitreD.campaign_context ?? {};
+  document.getElementById('campaignContext').innerHTML =
+    `Tactic: <span style="color:var(--green-dim)">${ctx.tactic_id ?? '—'}</span> &nbsp;|&nbsp;
+     Campaigns: <span style="color:var(--green-dim)">${ctx.campaign_count ?? '—'}</span> &nbsp;|&nbsp;
+     Severity: <span style="color:var(--amber)">${ctx.avg_severity ?? '—'}/100</span><br/>
+     Examples: ${(ctx.example_campaigns ?? []).join(', ') || '—'}`;
 }
 
-function filterFlows(cat, btn) {
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  renderFlows(cat);
+// ── EXPLAIN ───────────────────────────────────────────────────────────────────
+function renderExplain(d) {
+  if (!d) return;
+
+  // Attention heatmap
+  const weights = d.attention_weights ?? Array(10).fill(0.1);
+  const maxW    = Math.max(...weights, 0.001);
+  const gridEl  = document.getElementById('attentionGrid');
+  gridEl.innerHTML = weights.map((w, i) => {
+    const alpha = Math.round((w / maxW) * 200);
+    const color = `rgba(0,200,50,${(w / maxW).toFixed(2)})`;
+    return `<div class="attn-cell" style="background:${color};" title="T-${9-i}: weight=${w.toFixed(3)}"></div>`;
+  }).join('');
+
+  document.getElementById('outcomeBox').textContent =
+    '▶ ' + (d.target_prediction ?? 'Unknown prediction');
+
+  // Chart
+  const panel = document.getElementById('tab-explain');
+  if (panel.classList.contains('active')) drawFeatureChart(d);
 }
 
-// ── NODE TOOLTIPS ──
-const nodeData = {
-  attacker: "SRC: 10.0.2.15 (EXTERNAL THREAT ACTOR)\nSTATUS: ACTIVE ATTACKER\nFLAGS: TCP SYN FLOOD / SCAN\nFLOWS: 2,841 ACTIVE",
-  gateway: "IP: 172.16.0.1\nTYPE: PERIMETER FIREWALL / GATEWAY\nSTATUS: TRAFFIC PASSING",
-  target: "DST: 192.168.1.42\nSTATUS: COMPROMISED HOST\nTECHNIQUE: T1059 SCRIPT EXECUTION\nRISK: CRITICAL",
-  dc: "IP: 10.10.1.5 (PORT 445 SMB)\nTYPE: DOMAIN CONTROLLER\nSTATUS: TARGET OF LATERAL SCAN\nRISK: HIGH",
-  db: "IP: 10.10.1.20 (PORT 3306)\nTYPE: DATABASE SERVER\nSTATUS: MONITORED",
-  h3: "IP: 10.10.1.21\nTYPE: BACKUP DB\nSTATUS: BEING SCANNED"
-};
+function drawFeatureChart(d) {
+  const canvas = document.getElementById('featureChart');
+  const ctx = canvas.getContext('2d');
+  canvas.width  = canvas.offsetWidth  * window.devicePixelRatio;
+  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
-const tooltip = document.getElementById('node-tooltip');
-document.querySelectorAll('.net-node').forEach(node => {
-  node.addEventListener('mouseenter', e => {
-    const id = node.dataset.id;
-    if (nodeData[id]) {
-      tooltip.textContent = nodeData[id];
-      tooltip.style.display = 'block';
-    }
+  const W = canvas.offsetWidth, H = canvas.offsetHeight;
+  const features = (d.top_features ?? []).slice(0, 10);
+  if (!features.length) return;
+
+  const PAD  = { top: 10, right: 20, bottom: 10, left: 160 };
+  const barH = Math.floor((H - PAD.top - PAD.bottom) / features.length) - 3;
+  const maxImp = Math.max(...features.map(f => f.importance), 0.001);
+
+  ctx.clearRect(0, 0, W, H);
+
+  features.forEach((f, i) => {
+    const y    = PAD.top + i * (barH + 3);
+    const barW = ((f.importance / maxImp) * (W - PAD.left - PAD.right));
+
+    // Label
+    ctx.fillStyle = '#6b9b6b';
+    ctx.font = `${Math.min(barH, 11)}px JetBrains Mono`;
+    ctx.textAlign = 'right';
+    ctx.fillText(f.feature ?? '—', PAD.left - 6, y + barH * 0.7);
+
+    // Bar background
+    ctx.fillStyle = '#162016';
+    ctx.fillRect(PAD.left, y, W - PAD.left - PAD.right, barH);
+
+    // Bar fill (gradient green → amber on high)
+    const pct = f.importance / maxImp;
+    ctx.fillStyle = pct > 0.7 ? '#f59e0b' : '#00c832';
+    ctx.fillRect(PAD.left, y, barW, barH);
+
+    // Value
+    ctx.fillStyle = '#c8e6c8';
+    ctx.font = `${Math.min(barH, 10)}px JetBrains Mono`;
+    ctx.textAlign = 'left';
+    ctx.fillText(f.importance.toFixed(4), PAD.left + barW + 4, y + barH * 0.7);
   });
-  node.addEventListener('mousemove', e => {
-    const cont = document.getElementById('network-svg-container');
-    const rect = cont.getBoundingClientRect();
-    let x = e.clientX - rect.left + 15;
-    let y = e.clientY - rect.top + 15;
-    if (x + 200 > rect.width) x -= 215;
-    tooltip.style.left = x + 'px';
-    tooltip.style.top = y + 'px';
+
+  ctx.textAlign = 'left';
+}
+
+// ── BENCHMARK ─────────────────────────────────────────────────────────────────
+function renderBenchmark(d) {
+  if (!d || !d.models) return;
+  benchmarkData = d;
+
+  const tbody = document.getElementById('compareBody');
+  tbody.innerHTML = d.models.map(row => {
+    const isCyber = (row.Model ?? '').toLowerCase().includes('world');
+    const cls     = isCyber ? 'class="highlight"' : '';
+    const acc  = row.Accuracy   != null ? (row.Accuracy   * 100).toFixed(2) + '%' : (row['Accuracy']   ?? '—');
+    const f1   = row['F1-Score']!= null ? (row['F1-Score']* 100).toFixed(2) + '%' : '—';
+    const auc  = row['ROC-AUC'] != null ? (row['ROC-AUC'] * 100).toFixed(2) + '%' : '—';
+    const fpr  = row['FPR']     != null ? row['FPR']      : '—';
+    const lt   = row['Lead-Time']?? row['lead_time'] ?? '—';
+    return `<tr ${cls}>
+      <td>${row.Model ?? '—'}</td>
+      <td>${acc}</td><td>${f1}</td><td>${auc}</td><td>${fpr}</td>
+      <td style="color:${isCyber?'var(--green)':'var(--muted)'}">${lt}</td>
+    </tr>`;
+  }).join('');
+
+  const panel = document.getElementById('tab-compare');
+  if (panel.classList.contains('active')) drawCompareChart(d);
+}
+
+function drawCompareChart(d) {
+  const canvas = document.getElementById('compareChart');
+  const ctx = canvas.getContext('2d');
+  canvas.width  = canvas.offsetWidth  * window.devicePixelRatio;
+  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+  const W = canvas.offsetWidth, H = canvas.offsetHeight;
+  const models   = d.models ?? [];
+  const leadTimes= models.map(m => {
+    const lt = m['Lead-Time'] ?? m['lead_time'] ?? '0s';
+    return parseFloat(String(lt).replace(/[^0-9.]/g,'')) || 0;
   });
-  node.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
-});
+  const names = models.map(m => (m.Model ?? '?').replace('Causal World Model','CyberLens'));
 
-// ── LIVE SCENARIO INGESTION ──
-async function loadScenario(scenarioName, btn) {
-  document.querySelectorAll('#main .filter-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
+  if (!leadTimes.length) return;
+  ctx.clearRect(0, 0, W, H);
 
-  const label = document.getElementById('current-scenario-label');
-  if (label) label.textContent = `${scenarioName.toUpperCase()} (ANALYZING...)`;
+  const PAD  = { top:20, right:20, bottom:30, left:160 };
+  const barH = Math.floor((H - PAD.top - PAD.bottom) / leadTimes.length) - 4;
+  const maxV = Math.max(...leadTimes, 1);
 
-  const data = await API.get(`scenario?name=${scenarioName}`);
-  if (data && !data.error) {
-    if (label) label.textContent = `${scenarioName.toUpperCase()} (${data.filename}) — ${data.records_analyzed} FLOWS LOADED`;
-    await loadThreatOverview();
-    await loadForecastTimeline();
-    await loadExplainability();
-  } else {
-    if (label) label.textContent = `ERROR LOADING ${scenarioName.toUpperCase()}`;
+  leadTimes.forEach((v, i) => {
+    const y    = PAD.top + i * (barH + 4);
+    const barW = (v / maxV) * (W - PAD.left - PAD.right);
+
+    // Label
+    ctx.fillStyle = '#6b9b6b';
+    ctx.font = `${Math.min(barH, 11)}px JetBrains Mono`;
+    ctx.textAlign = 'right';
+    ctx.fillText(names[i] ?? '—', PAD.left - 6, y + barH * 0.72);
+
+    // BG
+    ctx.fillStyle = '#162016';
+    ctx.fillRect(PAD.left, y, W - PAD.left - PAD.right, barH);
+
+    // Fill
+    ctx.fillStyle = v > 0 ? '#00c832' : '#3a5a3a';
+    ctx.fillRect(PAD.left, y, barW || 4, barH);
+
+    // Label
+    ctx.fillStyle = '#c8e6c8';
+    ctx.font = `10px JetBrains Mono`;
+    ctx.textAlign = 'left';
+    ctx.fillText(v > 0 ? `+${v}s` : '0s (reactive)', PAD.left + (barW || 6) + 4, y + barH * 0.72);
+  });
+  ctx.textAlign = 'left';
+}
+
+// ── SIMULATION ────────────────────────────────────────────────────────────────
+async function runSimulate() {
+  const btn = document.getElementById('runSimBtn');
+  btn.disabled = true;
+  btn.textContent = '// running...';
+
+  const payload = {
+    syn_rate:     parseFloat(document.getElementById('synSlider').value),
+    port_entropy: parseFloat(document.getElementById('entSlider').value),
+    k_steps:      parseInt(document.getElementById('kSlider').value),
+  };
+
+  try {
+    const r = await fetch(`${API}/simulate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await r.json();
+
+    const resEl = document.getElementById('simResults');
+    const traj  = data.trajectory ?? [];
+    resEl.innerHTML =
+      `<div class="sim-row"><span class="sim-label">SYN RATE INPUT</span><span class="sim-val">${data.syn_rate_input}</span></div>
+       <div class="sim-row"><span class="sim-label">PORT ENTROPY INPUT</span><span class="sim-val">${data.port_entropy_input}</span></div>
+       <div class="sim-row"><span class="sim-label">PEAK RISK</span><span class="sim-val ${data.peak_risk_pct > 65 ? 'high' : ''}">${data.peak_risk_pct}%</span></div>
+       <div class="sim-row"><span class="sim-label">LEAD TIME</span><span class="sim-val">${data.lead_time_seconds ?? 'N/A'}s</span></div>` +
+       traj.map(s =>
+         `<div class="sim-row"><span class="sim-label">STEP ${s.step}</span>
+          <span class="sim-val ${s.prob_pct > 65 ? 'high' : ''}">${s.prob_pct}%</span>
+          <span class="sim-label">${s.stage}</span></div>`
+       ).join('');
+
+    drawSimChart(traj);
+  } catch (err) {
+    document.getElementById('simResults').innerHTML =
+      '<span class="red">// error: could not connect to API</span>';
   }
+
+  btn.disabled = false;
+  btn.textContent = '▶ RUN SIMULATION';
 }
 
-// ── JSON DOSSIER EXPORT ──
-async function exportJsonReport() {
-  const overview = await API.get('threat-overview');
-  const forecast = await API.get('forecast');
-  const explain = await API.get('explainability');
+function drawSimChart(traj) {
+  const canvas = document.getElementById('simChart');
+  const ctx = canvas.getContext('2d');
+  canvas.width  = canvas.offsetWidth  * window.devicePixelRatio;
+  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
-  const report = {
-    dossier_id: "NWF-28491",
-    classification: "RESTRICTED // CYBER DEFENSE INTELLIGENCE",
-    timestamp: new Date().toISOString(),
-    system: "Causal World Model NIDS (SIH PS #26153)",
-    threat_overview: overview,
-    forecast_trajectory: forecast,
-    explainability: explain,
-    proactive_defensive_playbook: [
-      "Isolate compromised host 192.168.1.42",
-      "Block inbound SMB/RPC TCP 445 on edge router",
-      "Revoke Kerberos TGT tickets for Domain Admin credentials",
-      "Quarantine subnet 10.10.1.0/24"
+  const W = canvas.offsetWidth, H = canvas.offsetHeight;
+  if (!traj.length) return;
+
+  const PAD  = { top: 16, right: 20, bottom: 28, left: 46 };
+  const vals = traj.map(s => s.prob_pct);
+  const toX  = i => PAD.left + (i / (vals.length - 1 || 1)) * (W - PAD.left - PAD.right);
+  const toY  = v => PAD.top  + (1 - v / 105) * (H - PAD.top - PAD.bottom);
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid
+  [0, 25, 50, 75, 100].forEach(y => {
+    const py = toY(y);
+    ctx.strokeStyle = '#1f3320';
+    ctx.lineWidth   = 1;
+    ctx.beginPath(); ctx.moveTo(PAD.left, py); ctx.lineTo(W - PAD.right, py); ctx.stroke();
+    ctx.fillStyle = '#3a5a3a';
+    ctx.font = '9px JetBrains Mono';
+    ctx.fillText(y + '%', 2, py + 3);
+  });
+
+  // Line
+  ctx.strokeStyle = '#00c832';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = '#00ff41'; ctx.shadowBlur = 6;
+  ctx.beginPath();
+  vals.forEach((v, i) => i === 0 ? ctx.moveTo(toX(i), toY(v)) : ctx.lineTo(toX(i), toY(v)));
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  vals.forEach((v, i) => {
+    ctx.beginPath();
+    ctx.arc(toX(i), toY(v), 4, 0, Math.PI * 2);
+    ctx.fillStyle = v > 65 ? '#ef4444' : '#00c832';
+    ctx.fill();
+    ctx.fillStyle = '#6b9b6b';
+    ctx.font = '8px JetBrains Mono';
+    ctx.fillText('S' + traj[i].step, toX(i) - 5, H - 8);
+  });
+}
+
+// ── DEMO DATA (no backend) ────────────────────────────────────────────────────
+function loadDemoData() {
+  overviewData = {
+    case_id: 'CL-DEMO-001', status: 'DEMO MODE', classification: '—',
+    model_name: 'LSTM+ATTENTION', dataset: 'CIC-IDS-2017',
+    infiltration_probability: 74.2, threat_level: 'HIGH RISK',
+    forecast_horizon: '+10s (K=5)', lead_time_seconds: 18.4,
+    active_flows: 1842, suspicious_nodes: 5, syn_ack_ratio: 4.2,
+    model_confidence: 93.1, current_stage: 'EXECUTION',
+    predicted_next_stage: 'LATERAL MOVEMENT',
+    mitre_tactic_current: 'TA0002', mitre_tactic_predicted: 'TA0008',
+    observed_campaigns: ['Conti', 'SolarWinds', 'NotPetya'],
+  };
+
+  forecastData = {
+    historical: [
+      { time:'T-30m', prob:18.0, stage:'Normal' },
+      { time:'T-20m', prob:22.5, stage:'Recon' },
+      { time:'T-10m', prob:28.0, stage:'Recon' },
+      { time:'T-5m',  prob:36.0, stage:'Init Access' },
+      { time:'NOW',   prob:44.0, stage:'Execution' },
+    ],
+    predicted: [
+      { step:1, time_label:'+5m',  prob:58.0, stage:'Lateral Mvt' },
+      { step:2, time_label:'+10m', prob:71.0, stage:'Lateral Mvt' },
+      { step:3, time_label:'+15m', prob:82.0, stage:'C2' },
+      { step:4, time_label:'+20m', prob:91.0, stage:'C2' },
+      { step:5, time_label:'+25m', prob:96.0, stage:'Exfil' },
+    ],
+    lead_time_seconds: 18.4,
+    max_risk_score: 96.0,
+  };
+
+  explainData = {
+    top_features: [
+      { feature:'syn_flag_count',      importance: 0.36 },
+      { feature:'ack_flag_count',      importance: 0.21 },
+      { feature:'dst_port_entropy',    importance: 0.18 },
+      { feature:'psh_flag_count',      importance: 0.15 },
+      { feature:'flow_count',          importance: 0.12 },
+      { feature:'total_fwd_bytes',     importance: 0.09 },
+      { feature:'syn_ack_ratio',       importance: 0.08 },
+      { feature:'iat_std',             importance: 0.07 },
+      { feature:'ttl_variance',        importance: 0.05 },
+      { feature:'unique_dst_ports',    importance: 0.04 },
+    ],
+    attention_weights: [0.04,0.04,0.06,0.08,0.09,0.11,0.13,0.16,0.14,0.15],
+    target_prediction: 'LATERAL MOVEMENT (TA0008)',
+  };
+
+  benchmarkData = {
+    models: [
+      { Model:'Logistic Regression', Accuracy:0.9718, 'F1-Score':0.9781, 'ROC-AUC':0.9973, FPR:'0.98%', 'Lead-Time':'0s (Reactive)' },
+      { Model:'Random Forest',        Accuracy:0.9084, 'F1-Score':0.9385, 'ROC-AUC':0.9981, FPR:'0.98%', 'Lead-Time':'0s (Reactive)' },
+      { Model:'CyberLens World Model',Accuracy:0.9394, 'F1-Score':0.9601, 'ROC-AUC':0.9952, FPR:'1.96%', 'Lead-Time':'+18.4s (Predictive)' },
     ]
   };
 
-  const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `incident_dossier_NWF28491_${Date.now()}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  renderOverview(overviewData);
+  renderForecast(forecastData);
+  renderExplain(explainData);
+  renderKillChain(null, overviewData);
+  renderBenchmark(benchmarkData);
 }
-
-// ── INITIAL DATA BOOTSTRAP ──
-window.addEventListener('DOMContentLoaded', () => {
-  loadThreatOverview();
-  loadForecastTimeline();
-  loadExplainability();
-  loadMitreData('TA0001');
-  loadBenchmark();
-  renderFlows('all');
-
-  // Auto-refresh telemetry every 10 seconds
-  setInterval(loadThreatOverview, 10000);
-});

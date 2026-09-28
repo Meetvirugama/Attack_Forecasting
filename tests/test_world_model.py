@@ -1,16 +1,16 @@
 """
-Unit Tests for src.world_model_core (WorldModelDynamics)
+Unit Tests for src.world_model_core (ThreatPredictor)
 """
 import unittest
 import torch
 import numpy as np
-from ml.world_model_core import WorldModelDynamics
+from ml.threat_predictor import ThreatPredictor
 
 
-class TestWorldModelDynamics(unittest.TestCase):
+class TestThreatPredictor(unittest.TestCase):
 
     def setUp(self):
-        self.model = WorldModelDynamics(
+        self.model = ThreatPredictor(
             input_dim=30,
             hidden_dim=64,
             num_lstm_layers=1,

@@ -3,684 +3,306 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI NETWORK ATTACK FORECASTING — NWF-28491</title>
+  <title>CyberLens — Network Threat Predictor</title>
+  <meta name="description" content="CyberLens uses AI to predict network attacks before they happen, giving defenders a critical time advantage." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
-<!-- TOP CLASSIFICATION & TELEMETRY BAR -->
-<div id="top-bar">
-  <div class="tb-left">
-    <div class="tb-label">⬡ <span>NWAF / SIH-26153</span></div>
-    <div class="tb-badge badge-restricted">RESTRICTED // NOFORN</div>
-    <div class="tb-label">CASE ID: <span>NWF-28491</span></div>
-    <div class="tb-label">MODEL: <span>TEMPORAL-WORLD-MODEL-LSTM</span></div>
-    <div class="tb-label">DATASET: <span>CIC-IDS-2017</span></div>
+  <!-- ── HEADER ── -->
+  <header class="header">
+    <div class="header-left">
+      <span class="logo-bracket">[</span>
+      <span class="logo-text">CYBERLENS</span>
+      <span class="logo-bracket">]</span>
+      <span class="logo-sub">// network threat predictor v1.0</span>
+    </div>
+    <div class="header-right">
+      <span class="blink-dot" id="statusDot"></span>
+      <span class="status-text" id="statusText">CONNECTING...</span>
+      <span class="header-time" id="headerTime"></span>
+    </div>
+  </header>
+
+  <!-- ── SCENARIO TOOLBAR ── -->
+  <div class="toolbar">
+    <span class="toolbar-label">// LOAD SCENARIO:</span>
+    <button class="scenario-btn" onclick="loadScenario('portscan')" id="btn-portscan">PORT SCAN</button>
+    <button class="scenario-btn" onclick="loadScenario('patator')" id="btn-patator">BRUTE FORCE</button>
+    <button class="scenario-btn active" onclick="loadScenario('infiltration')" id="btn-infiltration">INFILTRATION</button>
+    <button class="scenario-btn" onclick="loadScenario('dos')" id="btn-dos">DoS ATTACK</button>
+    <button class="scenario-btn" onclick="loadScenario('ddos')" id="btn-ddos">DDoS FLOOD</button>
+    <div class="toolbar-spacer"></div>
+    <button class="refresh-btn" onclick="refreshAll()">↺ REFRESH</button>
   </div>
-  <div class="tb-right">
-    <div class="tb-badge badge-active">STATUS: ACTIVE INCIDENT</div>
-    <div class="tb-badge badge-warn">FORECAST ENGINE: ONLINE</div>
-    <div id="live-clock">--:--:-- IST</div>
-  </div>
-</div>
 
-<!-- APP WRAPPER -->
-<div id="app">
+  <!-- ── MAIN LAYOUT ── -->
+  <main class="main">
 
-  <!-- LEFT INTELLIGENCE INDEX NAVIGATION -->
-  <nav id="nav">
-    <div id="nav-header">
-      <div class="label">Intelligence Index</div>
-      <div class="title">Threat Investigation</div>
-    </div>
-
-    <div class="nav-item active" data-page="overview">
-      <div class="num">01</div>
-      <div class="name">Threat Overview</div>
-      <div class="status-dot alert"></div>
-    </div>
-    <div class="nav-item" data-page="network">
-      <div class="num">02</div>
-      <div class="name">Network State</div>
-      <div class="status-dot warn"></div>
-    </div>
-    <div class="nav-item" data-page="forecast">
-      <div class="num">03</div>
-      <div class="name">Attack Forecast</div>
-      <div class="status-dot alert"></div>
-    </div>
-    <div class="nav-item" data-page="timeline">
-      <div class="num">04</div>
-      <div class="name">Attack Timeline</div>
-      <div class="status-dot warn"></div>
-    </div>
-    <div class="nav-item" data-page="forensics">
-      <div class="num">05</div>
-      <div class="name">Traffic Forensics</div>
-      <div class="status-dot warn"></div>
-    </div>
-    <div class="nav-item" data-page="mitre">
-      <div class="num">06</div>
-      <div class="name">MITRE ATT&CK</div>
-      <div class="status-dot ok"></div>
-    </div>
-    <div class="nav-item" data-page="explainability">
-      <div class="num">07</div>
-      <div class="name">Model Explainability</div>
-      <div class="status-dot ok"></div>
-    </div>
-    <div class="nav-item" data-page="simulation">
-      <div class="num">08</div>
-      <div class="name">Simulation Rollout</div>
-      <div class="status-dot ok"></div>
-    </div>
-    <div class="nav-item" data-page="benchmark">
-      <div class="num">09</div>
-      <div class="name">Benchmark Metrics</div>
-      <div class="status-dot ok"></div>
-    </div>
-    <div class="nav-item" data-page="report">
-      <div class="num">10</div>
-      <div class="name">Incident Report</div>
-      <div class="status-dot ok"></div>
-    </div>
-  </nav>
-
-  <!-- MAIN VIEWPORT -->
-  <main id="main">
-
-    <!-- LIVE TELEMETRY SCENARIO INGESTION TOOLBAR -->
-    <div class="panel" style="margin-bottom:16px;padding:8px 16px;background:var(--cream-2);border-color:var(--black);">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:1px;">
-          TELEMETRY STREAM: <span id="current-scenario-label" style="color:var(--red);">INFILTRATION & LATERAL MOVEMENT (LIVE)</span>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="filter-btn active" onclick="loadScenario('infiltration', this)">⚡ INFILTRATION</button>
-          <button class="filter-btn" onclick="loadScenario('patator', this)">⚡ SSH PATATOR</button>
-          <button class="filter-btn" onclick="loadScenario('portscan', this)">⚡ PORTSCAN</button>
-          <button class="filter-btn" onclick="loadScenario('webattack', this)">⚡ WEB ATTACKS</button>
-          <button class="filter-btn" onclick="loadScenario('ddos', this)">⚡ DDOS FLOOD</button>
-        </div>
+    <!-- ── LEFT NAV ── -->
+    <nav class="sidenav">
+      <button class="nav-btn active" onclick="showTab('overview')" id="nav-overview">
+        <span class="nav-icon">◈</span> Overview
+      </button>
+      <button class="nav-btn" onclick="showTab('forecast')" id="nav-forecast">
+        <span class="nav-icon">⬡</span> Forecast
+      </button>
+      <button class="nav-btn" onclick="showTab('killchain')" id="nav-killchain">
+        <span class="nav-icon">⬡</span> Kill Chain
+      </button>
+      <button class="nav-btn" onclick="showTab('explain')" id="nav-explain">
+        <span class="nav-icon">⬡</span> Explain AI
+      </button>
+      <button class="nav-btn" onclick="showTab('simulate')" id="nav-simulate">
+        <span class="nav-icon">⬡</span> Simulate
+      </button>
+      <button class="nav-btn" onclick="showTab('compare')" id="nav-compare">
+        <span class="nav-icon">⬡</span> Compare
+      </button>
+      <div class="nav-divider"></div>
+      <div class="nav-info">
+        <div class="nav-info-row"><span>MODEL</span><span class="green">LSTM+ATT</span></div>
+        <div class="nav-info-row"><span>DATA</span><span class="green">CIC-IDS17</span></div>
+        <div class="nav-info-row"><span>CAMPAIGNS</span><span class="green">39</span></div>
       </div>
-    </div>
+    </nav>
 
-    <!-- 01 THREAT OVERVIEW -->
-    <section class="page active" id="page-overview">
-      <div class="sec-header">
-        <div class="sec-num">01 /</div>
-        <div class="sec-title">Threat Forecast Overview</div>
-        <div class="sec-meta">ANALYSIS MODE: OFFLINE LOCAL</div>
-      </div>
+    <!-- ── CONTENT AREA ── -->
+    <div class="content">
 
-      <!-- Hero Card -->
-      <div class="threat-hero">
-        <div class="th-label">INFILTRATION PROBABILITY — FORECAST HORIZON: +15 MIN</div>
-        <div class="th-num" id="prob-val">87.4<span>%</span></div>
-        <div class="th-status" id="threat-status">⚠ HIGH RISK</div>
-        <div class="th-sub mt4">WORLD MODEL: P(S<sub>t+1</sub> | S<sub>t</sub>) — LSTM + ATTENTION DYNAMICS — +18.4s LEAD TIME</div>
-        <div class="th-horizon">
-          <div class="lbl">PREDICTION HORIZON</div>
-          <div class="val" id="fcst-horizon">+15 MIN</div>
-          <div class="sub">K=5 FORWARD STEPS</div>
-          <div class="sub mt4">LEAD-TIME: <span id="lead-time-sub" style="color:var(--yellow-l)">+18.4s ADVANCE</span></div>
-          <div class="sub">SOURCE: 10.0.2.15</div>
+      <!-- TAB: OVERVIEW -->
+      <div class="tab-panel active" id="tab-overview">
+        <div class="panel-header">
+          <span class="panel-title">// THREAT OVERVIEW</span>
+          <span class="panel-sub" id="overviewCaseId">CASE: —</span>
         </div>
-      </div>
 
-      <!-- 4 Critical Metrics -->
-      <div class="grid-4">
-        <div class="metric-card">
-          <div class="mc-label">Active Flow Telemetry</div>
-          <div class="mc-val" id="flow-count">2,841</div>
-          <div class="mc-delta delta-up mt4">↑ +312 flows vs T-5m</div>
-        </div>
-        <div class="metric-card">
-          <div class="mc-label">Compromised / Target Nodes</div>
-          <div class="mc-val" style="color:var(--red)">7</div>
-          <div class="mc-delta delta-up mt4">↑ +3 nodes under scan</div>
-        </div>
-        <div class="metric-card">
-          <div class="mc-label">SYN / ACK Ratio</div>
-          <div class="mc-val" id="syn-ack-ratio" style="color:var(--orange)">4.7×</div>
-          <div class="mc-delta delta-up mt4">↑ Anomalous probing (>2.0)</div>
-        </div>
-        <div class="metric-card">
-          <div class="mc-label">Model Confidence</div>
-          <div class="mc-val" id="model-conf">94.2<span style="font-size:20px">%</span></div>
-          <div class="mc-delta delta-neu mt4">— Calibrated ensemble</div>
-        </div>
-      </div>
-
-      <!-- Attack Chain Progression -->
-      <div class="mitre-chain">
-        <div class="panel-label">ATTACK PROGRESSION (MITRE ATT&CK ENTERPRISE)</div>
-        <div class="mc-row">
-          <div class="mc-stage observed">
-            <div class="stage-tac">TA0043 ✓</div>
-            <div class="stage-name">RECONNAISSANCE</div>
-            <div class="stage-tech">T1595 · Port Scan</div>
+        <div class="stat-grid">
+          <div class="stat-card danger" id="statRisk">
+            <div class="stat-label">INFILTRATION RISK</div>
+            <div class="stat-value" id="riskVal">—%</div>
+            <div class="stat-bar-bg"><div class="stat-bar" id="riskBar" style="width:0%"></div></div>
           </div>
-          <div class="mc-arrow">→</div>
-          <div class="mc-stage observed">
-            <div class="stage-tac">TA0001 ✓</div>
-            <div class="stage-name">INITIAL ACCESS</div>
-            <div class="stage-tech">T1566 · Phishing</div>
+          <div class="stat-card" id="statStage">
+            <div class="stat-label">CURRENT STAGE</div>
+            <div class="stat-value small" id="stageVal">—</div>
+            <div class="stat-hint" id="nextStageVal">Next → —</div>
           </div>
-          <div class="mc-arrow">→</div>
-          <div class="mc-stage current">
-            <div class="stage-tac">TA0002 ← CURRENT</div>
-            <div class="stage-name">EXECUTION</div>
-            <div class="stage-tech">T1059 · Script Exec</div>
+          <div class="stat-card" id="statLead">
+            <div class="stat-label">LEAD TIME</div>
+            <div class="stat-value" id="leadVal">—s</div>
+            <div class="stat-hint">advance warning window</div>
           </div>
-          <div class="mc-arrow predicted">- - →</div>
-          <div class="mc-stage predicted">
-            <div class="stage-tac">TA0008 ← PREDICTED</div>
-            <div class="stage-name">LATERAL MOVEMENT</div>
-            <div class="stage-tech">T1021 · SMB / Port 445</div>
-          </div>
-          <div class="mc-arrow predicted">- - →</div>
-          <div class="mc-stage predicted">
-            <div class="stage-tac">TA0011</div>
-            <div class="stage-name">COMMAND & CONTROL</div>
-            <div class="stage-tech">T1071 · Standard Port</div>
-          </div>
-          <div class="mc-arrow predicted">- - →</div>
-          <div class="mc-stage critical">
-            <div class="stage-tac">TA0010 ← CRITICAL RISK</div>
-            <div class="stage-name">EXFILTRATION</div>
-            <div class="stage-tech">T1041 · Exfil over C2</div>
+          <div class="stat-card" id="statFlows">
+            <div class="stat-label">ACTIVE FLOWS</div>
+            <div class="stat-value" id="flowsVal">—</div>
+            <div class="stat-hint" id="suspiciousVal">— suspicious nodes</div>
           </div>
         </div>
-        <div class="mc-badge-row">
-          <div class="mc-badge"><span class="key">CURRENT STAGE: </span><span class="val warn">EXECUTION</span></div>
-          <div class="mc-badge"><span class="key">PREDICTED NEXT: </span><span class="val crit">LATERAL MOVEMENT (82% CONFIDENCE)</span></div>
-          <div class="mc-badge"><span class="key">OBSERVED CAMPAIGNS: </span><span class="val">Conti · SolarWinds · FIN13</span></div>
-          <div class="mc-badge"><span class="key">NCISS SEVERITY: </span><span class="val crit">85–95/100 (HIGH IMPACT)</span></div>
-        </div>
-      </div>
 
-      <!-- Dossier Metadata -->
-      <div class="panel small-text">
-        <div style="display:flex;gap:28px;flex-wrap:wrap">
-          <div>CASE ID: <mono style="color:var(--black);font-weight:700">NWF-28491</mono></div>
-          <div>ANALYSIS MODE: <mono style="color:var(--black);font-weight:700">OFFLINE</mono></div>
-          <div>FORECAST ENGINE: <mono style="color:#4A9A4A;font-weight:700">ONLINE</mono></div>
-          <div>WORLD MODEL: <mono style="color:var(--black);font-weight:700">TEMPORAL-LSTM v1.0</mono></div>
-          <div>DATASET: <mono style="color:var(--black);font-weight:700">CIC-IDS-2017 · 705,680 Flows</mono></div>
-          <div>CLASSIFICATION: <mono style="color:var(--red);font-weight:700">RESTRICTED</mono></div>
-          <div>LAST ANALYSIS: <mono style="color:var(--black);font-weight:700" id="dossier-time">14:32:08</mono></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 02 NETWORK STATE -->
-    <section class="page" id="page-network">
-      <div class="sec-header">
-        <div class="sec-num">02 /</div>
-        <div class="sec-title">Network State Topology</div>
-        <div class="sec-meta">TOPOLOGY TELEMETRY — WINDOW: 2.0s</div>
-      </div>
-
-      <div id="network-svg-container">
-        <div class="panel-label">CURRENT NETWORK GRAPH — STATE VECTOR S<sub>t</sub> — FLOW #2841</div>
-        <div id="node-tooltip" class="node-tooltip"></div>
-        <svg id="network-svg" viewBox="0 0 900 380">
-          <defs>
-            <marker id="arr-b" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-              <path d="M0,0 L0,6 L6,3 z" fill="#1A1A1A" />
-            </marker>
-            <marker id="arr-r" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-              <path d="M0,0 L0,6 L6,3 z" fill="#A82020" />
-            </marker>
-            <marker id="arr-o" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-              <path d="M0,0 L0,6 L6,3 z" fill="#C85A17" />
-            </marker>
-          </defs>
-
-          <!-- Zone demarcation boundaries -->
-          <rect x="10" y="10" width="180" height="360" fill="none" stroke="#1A1A1A" stroke-width="0.5" stroke-dasharray="4,4" opacity="0.3"/>
-          <text x="100" y="28" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#666" letter-spacing="2">EXTERNAL ZONE</text>
-          
-          <rect x="210" y="10" width="180" height="360" fill="none" stroke="#1A1A1A" stroke-width="0.5" stroke-dasharray="4,4" opacity="0.3"/>
-          <text x="300" y="28" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#666" letter-spacing="2">DMZ / EDGE PERIMETER</text>
-
-          <rect x="410" y="10" width="480" height="360" fill="none" stroke="#1A1A1A" stroke-width="0.5" stroke-dasharray="4,4" opacity="0.3"/>
-          <text x="650" y="28" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#666" letter-spacing="2">INTERNAL ENTERPRISE SUBNET (10.10.0.0/16)</text>
-
-          <!-- Connections -->
-          <line x1="250" y1="190" x2="440" y2="130" stroke="#1A1A1A" stroke-width="1" marker-end="url(#arr-b)" opacity="0.35"/>
-          <line x1="250" y1="190" x2="440" y2="190" stroke="#1A1A1A" stroke-width="1" marker-end="url(#arr-b)" opacity="0.35"/>
-          <line x1="440" y1="130" x2="590" y2="90" stroke="#1A1A1A" stroke-width="0.8" marker-end="url(#arr-b)" opacity="0.3"/>
-          <line x1="440" y1="190" x2="590" y2="190" stroke="#1A1A1A" stroke-width="0.8" marker-end="url(#arr-b)" opacity="0.3"/>
-          <line x1="440" y1="190" x2="590" y2="290" stroke="#1A1A1A" stroke-width="0.8" marker-end="url(#arr-b)" opacity="0.3"/>
-          <line x1="590" y1="90" x2="740" y2="70" stroke="#1A1A1A" stroke-width="0.6" marker-end="url(#arr-b)" opacity="0.25"/>
-          <line x1="590" y1="90" x2="740" y2="120" stroke="#1A1A1A" stroke-width="0.6" marker-end="url(#arr-b)" opacity="0.25"/>
-          <line x1="590" y1="190" x2="740" y2="190" stroke="#1A1A1A" stroke-width="0.6" marker-end="url(#arr-b)" opacity="0.25"/>
-          <line x1="590" y1="290" x2="740" y2="260" stroke="#1A1A1A" stroke-width="0.6" marker-end="url(#arr-b)" opacity="0.25"/>
-          <line x1="590" y1="290" x2="740" y2="320" stroke="#1A1A1A" stroke-width="0.6" marker-end="url(#arr-b)" opacity="0.25"/>
-
-          <!-- Attack path vectors (Red dashed) -->
-          <line x1="100" y1="190" x2="240" y2="190" stroke="#A82020" stroke-width="2" marker-end="url(#arr-r)" stroke-dasharray="6,3"/>
-          <line x1="250" y1="190" x2="440" y2="260" stroke="#A82020" stroke-width="2" marker-end="url(#arr-r)" stroke-dasharray="6,3"/>
-          <line x1="440" y1="260" x2="590" y2="190" stroke="#A82020" stroke-width="1.8" marker-end="url(#arr-r)" stroke-dasharray="5,3"/>
-          <line x1="590" y1="190" x2="740" y2="190" stroke="#C85A17" stroke-width="1.6" marker-end="url(#arr-o)" stroke-dasharray="5,3" opacity="0.8"/>
-
-          <!-- ATTACKER NODE -->
-          <g class="net-node" data-id="attacker" style="cursor:pointer">
-            <circle cx="100" cy="190" r="22" fill="#F3D1D1" stroke="#A82020" stroke-width="2"/>
-            <text x="100" y="186" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#A82020">ATK</text>
-            <text x="100" y="198" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7" fill="#A82020">EXTERNAL</text>
-            <text x="100" y="224" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="#1A1A1A">SRC 10.0.2.15</text>
-          </g>
-
-          <!-- GATEWAY -->
-          <g class="net-node" data-id="gateway" style="cursor:pointer">
-            <rect x="228" y="172" width="44" height="36" fill="#ECE5D8" stroke="#1A1A1A" stroke-width="2"/>
-            <text x="250" y="188" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" font-weight="700" fill="#1A1A1A">FW-01</text>
-            <text x="250" y="200" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6" fill="#666">GATEWAY</text>
-            <text x="250" y="220" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="#1A1A1A">172.16.0.1</text>
-          </g>
-
-          <!-- COMPROMISED TARGET -->
-          <g class="net-node" data-id="target" style="cursor:pointer">
-            <circle cx="440" cy="260" r="18" fill="#F3D1D1" stroke="#A82020" stroke-width="2"/>
-            <text x="440" y="257" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7.5" font-weight="700" fill="#A82020">HOST</text>
-            <text x="440" y="267" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6" fill="#A82020">COMPROMISED</text>
-            <text x="440" y="288" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="#1A1A1A">DST 192.168.1.42</text>
-          </g>
-
-          <!-- DOMAIN CONTROLLER -->
-          <g class="net-node" data-id="dc" style="cursor:pointer">
-            <circle cx="590" cy="90" r="16" fill="#ECE5D8" stroke="#1A1A1A" stroke-width="1.5"/>
-            <text x="590" y="87" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7" font-weight="700" fill="#1A1A1A">DC-SRV</text>
-            <text x="590" y="97" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6" fill="#666">PORT 445</text>
-            <text x="590" y="116" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="#1A1A1A">10.10.1.5</text>
-          </g>
-
-          <!-- DATABASE SERVER -->
-          <g class="net-node" data-id="db" style="cursor:pointer">
-            <circle cx="590" cy="190" r="16" fill="#ECE5D8" stroke="#1A1A1A" stroke-width="1.5"/>
-            <text x="590" y="187" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7" font-weight="700" fill="#1A1A1A">DB-01</text>
-            <text x="590" y="197" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6" fill="#666">PORT 3306</text>
-            <text x="590" y="216" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="#1A1A1A">10.10.1.20</text>
-          </g>
-
-          <!-- BACKUP DB (TARGET OF SCAN) -->
-          <g class="net-node" data-id="h3" style="cursor:pointer">
-            <circle cx="740" cy="190" r="14" fill="#F8DFC7" stroke="#C85A17" stroke-width="1.5"/>
-            <text x="740" y="187" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="6.5" font-weight="700" fill="#C85A17">DB-BKP</text>
-            <text x="740" y="197" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="5.5" fill="#C85A17">SCANNING</text>
-            <text x="740" y="214" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7.5" fill="#1A1A1A">10.10.1.21</text>
-          </g>
-        </svg>
-
-        <div class="network-legend">
-          <div class="nl-item"><div class="nl-dot" style="background:#F3D1D1;border-color:#A82020"></div>Attacker Source Node</div>
-          <div class="nl-item"><div class="nl-dot" style="background:#F8DFC7;border-color:#C85A17"></div>Active Scan / Target</div>
-          <div class="nl-item"><div class="nl-dot" style="background:#ECE5D8;border-color:#1A1A1A"></div>Internal Host</div>
-          <div class="nl-item">
-            <div style="width:24px;height:2px;border-top:2px dashed #A82020;flex-shrink:0"></div>
-            Observed Progression Path
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header">// THREAT METADATA</div>
+            <table class="info-table" id="metaTable">
+              <tr><td>Status</td><td id="mStatus">—</td></tr>
+              <tr><td>Model</td><td id="mModel">—</td></tr>
+              <tr><td>Dataset</td><td id="mDataset">—</td></tr>
+              <tr><td>Confidence</td><td id="mConf">—</td></tr>
+              <tr><td>MITRE Tactic (Now)</td><td id="mTacticNow">—</td></tr>
+              <tr><td>MITRE Tactic (Next)</td><td id="mTacticNext">—</td></tr>
+              <tr><td>SYN/ACK Ratio</td><td id="mSynAck">—</td></tr>
+              <tr><td>Forecast Horizon</td><td id="mHorizon">—</td></tr>
+            </table>
           </div>
-          <div class="nl-item">
-            <div style="width:24px;height:2px;border-top:2px dashed #C85A17;flex-shrink:0"></div>
-            Predicted Lateral Movement
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 03 ATTACK FORECAST TIMELINE -->
-    <section class="page" id="page-forecast">
-      <div class="sec-header">
-        <div class="sec-num">03 /</div>
-        <div class="sec-title">Attack Forecast Timeline</div>
-        <div class="sec-meta">TEMPORAL PREDICTION — T-30m TO +30m</div>
-      </div>
-
-      <div class="forecast-panel">
-        <div class="panel-label">TEMPORAL PROBABILITY TRAJECTORY (T-30m → NOW → +30m)</div>
-        <svg id="forecast-svg" viewBox="0 0 900 250">
-          <g opacity="0.15">
-            <line x1="80" y1="30" x2="860" y2="30" stroke="#1A1A1A" stroke-width="0.5"/>
-            <line x1="80" y1="75" x2="860" y2="75" stroke="#1A1A1A" stroke-width="0.5"/>
-            <line x1="80" y1="120" x2="860" y2="120" stroke="#1A1A1A" stroke-width="0.5"/>
-            <line x1="80" y1="165" x2="860" y2="165" stroke="#1A1A1A" stroke-width="0.5"/>
-            <line x1="80" y1="210" x2="860" y2="210" stroke="#1A1A1A" stroke-width="0.5"/>
-          </g>
-          
-          <text x="70" y="34" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="9" fill="#666">100%</text>
-          <text x="70" y="79" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="9" fill="#666">75%</text>
-          <text x="70" y="124" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="9" fill="#666">50%</text>
-          <text x="70" y="169" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="9" fill="#666">25%</text>
-          <text x="70" y="214" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="9" fill="#666">0%</text>
-
-          <line x1="490" y1="15" x2="490" y2="225" stroke="#1A1A1A" stroke-width="1.5" stroke-dasharray="5,3"/>
-          <rect x="475" y="4" width="30" height="14" fill="#1A1A1A"/>
-          <text x="490" y="14" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" font-weight="700" fill="#F4EFE6">NOW</text>
-
-          <polygon points="490,126 600,95 700,56 780,34 860,18 860,54 780,76 700,105 600,140 490,150" fill="#A82020" opacity="0.08"/>
-
-          <polyline points="80,185 160,190 240,178 320,175 400,165 490,126" fill="none" stroke="#1A1A1A" stroke-width="2.5" stroke-linecap="round"/>
-          <polyline points="490,126 600,95 700,56 780,34 860,18" fill="none" stroke="#A82020" stroke-width="2.5" stroke-dasharray="7,4" stroke-linecap="round"/>
-
-          <circle cx="80" cy="185" r="5" fill="#1A1A1A"/>
-          <circle cx="160" cy="190" r="5" fill="#1A1A1A"/>
-          <circle cx="240" cy="178" r="5" fill="#1A1A1A"/>
-          <circle cx="320" cy="175" r="5" fill="#1A1A1A"/>
-          <circle cx="400" cy="165" r="5" fill="#1A1A1A"/>
-          <circle cx="490" cy="126" r="7" fill="#C85A17"/>
-          
-          <circle cx="600" cy="95" r="6" fill="none" stroke="#A82020" stroke-width="2"/>
-          <circle cx="700" cy="56" r="6" fill="none" stroke="#A82020" stroke-width="2"/>
-          <circle cx="780" cy="34" r="6" fill="none" stroke="#A82020" stroke-width="2"/>
-          <circle cx="860" cy="18" r="6" fill="none" stroke="#A82020" stroke-width="2"/>
-
-          <text x="490" y="118" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#C85A17">42%</text>
-          <text x="600" y="88" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#A82020">61%</text>
-          <text x="700" y="49" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#A82020">74%</text>
-          <text x="780" y="27" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#A82020">87%</text>
-          <text x="860" y="12" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#A82020">93%</text>
-
-          <text x="80" y="240" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#666">T-30m</text>
-          <text x="240" y="240" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#666">T-20m</text>
-          <text x="400" y="240" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#666">T-5m</text>
-          <text x="490" y="240" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#1A1A1A">NOW</text>
-          <text x="600" y="240" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#A82020">+5m</text>
-          <text x="700" y="240" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#A82020">+10m</text>
-          <text x="780" y="240" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#A82020">+15m</text>
-          <text x="860" y="240" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#A82020">+30m</text>
-        </svg>
-
-        <div class="forecast-key">
-          <div class="fk-item"><div class="fk-line solid"></div>Observed Network Behaviour</div>
-          <div class="fk-item"><div class="fk-line dashed"></div>AI Predicted Trajectory</div>
-          <div class="fk-item" style="margin-left:auto;color:var(--gray-d)">
-            <mono style="font-size:9.5px">LEAD TIME: +18.4s ADVANCE WARNING</mono>
-          </div>
-        </div>
-      </div>
-
-      <!-- K-Step Forward Table -->
-      <div class="panel mt12">
-        <div class="panel-label">K-STEP FORWARD SIMULATION OUTPUT (REAL MODEL INFERENCE)</div>
-        <table class="flow-table mt8">
-          <thead>
-            <tr><th>STEP k</th><th>TIME OFFSET</th><th>PRED. STAGE</th><th>INFILTRATION PROB</th><th>MITRE TACTIC</th><th>RISK LEVEL</th><th>LEAD TIME</th></tr>
-          </thead>
-          <tbody id="kstep-tbody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- 04 ATTACK TIMELINE -->
-    <section class="page" id="page-timeline">
-      <div class="sec-header"><div class="sec-num">04 /</div><div class="sec-title">Incident Chronology</div></div>
-      <div class="panel">
-        <div class="panel-label">CHRONOLOGICAL ATTACK PROGRESSION</div>
-        <div style="padding:10px 0;border-bottom:1px solid var(--cream-3);font-family:'JetBrains Mono',monospace;font-size:9.5px">
-          <span style="color:var(--gray-m)">14:21:12</span> — <strong>RECONNAISSANCE (TA0043)</strong>: Port scan from 10.0.2.15 (2,841 SYN packets).
-        </div>
-        <div style="padding:10px 0;border-bottom:1px solid var(--cream-3);font-family:'JetBrains Mono',monospace;font-size:9.5px">
-          <span style="color:var(--gray-m)">14:25:38</span> — <strong>INITIAL ACCESS (TA0001)</strong>: Spearphishing attachment executed on 192.168.1.42.
-        </div>
-        <div style="padding:10px 0;border-bottom:1px solid var(--cream-3);font-family:'JetBrains Mono',monospace;font-size:9.5px">
-          <span style="color:var(--gray-m)">14:28:03</span> — <strong>EXECUTION (TA0002)</strong>: PowerShell launch detected.
-        </div>
-        <div style="padding:10px 0;border-bottom:1px solid var(--cream-3);font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--red)">
-          <span>NOW+6s</span> — <strong>LATERAL MOVEMENT (PREDICTED TA0008)</strong>: Predicted SMB propagation to Domain Controller 10.10.1.5.
-        </div>
-      </div>
-    </section>
-
-    <!-- 05 TRAFFIC FORENSICS -->
-    <section class="page" id="page-forensics">
-      <div class="sec-header"><div class="sec-num">05 /</div><div class="sec-title">Traffic Forensics</div></div>
-      <div class="panel">
-        <div class="filter-row">
-          <button class="filter-btn active" onclick="filterFlows('all',this)">ALL</button>
-          <button class="filter-btn" onclick="filterFlows('suspicious',this)">SUSPICIOUS</button>
-          <button class="filter-btn" onclick="filterFlows('tcp',this)">TCP</button>
-          <button class="filter-btn" onclick="filterFlows('udp',this)">UDP</button>
-          <button class="filter-btn" onclick="filterFlows('high',this)">HIGH RISK</button>
-        </div>
-        <table class="flow-table">
-          <thead>
-            <tr><th>TIMESTAMP</th><th>SRC IP</th><th>DST IP</th><th>PORT</th><th>PROTO</th><th>FLAGS</th><th>PKTS</th><th>BYTES</th><th>DURATION</th><th>RISK</th></tr>
-          </thead>
-          <tbody id="flow-tbody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- 06 MITRE ATT&CK -->
-    <section class="page" id="page-mitre">
-      <div class="sec-header"><div class="sec-num">06 /</div><div class="sec-title">MITRE ATT&CK Matrix</div></div>
-      <div class="grid-2">
-        <div class="panel">
-          <div class="panel-label">MARKOV TRANSITION PROBABILITIES (FROM 39 CAMPAIGNS)</div>
-          <div id="mitre-next-steps" class="mt8"></div>
-        </div>
-        <div class="panel">
-          <div class="panel-label">REAL-WORLD CAMPAIGNS REFERENCE</div>
-          <p class="small-text mt4" style="line-height:1.8">
-            • <strong>SolarWinds (NCISS 95/100)</strong> — 23 techniques<br/>
-            • <strong>Conti Ransomware (NCISS 85/100)</strong> — 13 techniques<br/>
-            • <strong>NotPetya (NCISS 91/100)</strong> — 23 techniques<br/>
-            • <strong>FIN13 (NCISS 74/100)</strong> — 36 techniques<br/>
-            • <strong>Black Basta (NCISS 83/100)</strong> — 38 techniques
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- 07 EXPLAINABILITY -->
-    <section class="page" id="page-explainability">
-      <div class="sec-header">
-        <div class="sec-num">07 /</div>
-        <div class="sec-title">Model Explainability (XAI)</div>
-        <div class="sec-meta">FEATURE ATTRIBUTION & ATTENTION SALIENCY</div>
-      </div>
-      <div class="panel">
-        <div class="panel-label">WHY IS THE MODEL PREDICTING THIS? (SHAP & GRADIENT SALIENCY)</div>
-        <div id="feature-rows" class="mt8"></div>
-      </div>
-    </section>
-
-    <!-- 08 SIMULATION -->
-    <section class="page" id="page-simulation">
-      <div class="sec-header">
-        <div class="sec-num">08 /</div>
-        <div class="sec-title">World Model K-Step Simulation</div>
-        <div class="sec-meta">AUTOREGRESSIVE FORWARD ROLLOUT</div>
-      </div>
-      <div class="panel">
-        <div class="panel-label">INTERACTIVE K-STEP FORWARD ROLLOUT P(S<sub>t+1</sub> | S<sub>t</sub>)</div>
-        <div class="grid-3 mt8">
-          <div>
-            <div class="small-text" style="margin-bottom:6px">SYN FLAG SURGE (scale)</div>
-            <input type="range" id="sim-syn" min="0" max="10" step="0.1" value="5.2" style="width:100%" oninput="updateSim()"/>
-            <div class="small-text" id="sim-syn-val">5.2</div>
-          </div>
-          <div>
-            <div class="small-text" style="margin-bottom:6px">PORT ENTROPY (bits)</div>
-            <input type="range" id="sim-entropy" min="0" max="6" step="0.1" value="3.5" style="width:100%" oninput="updateSim()"/>
-            <div class="small-text" id="sim-entropy-val">3.5</div>
-          </div>
-          <div>
-            <div class="small-text" style="margin-bottom:6px">FORECAST HORIZON K (steps)</div>
-            <input type="range" id="sim-k" min="1" max="10" step="1" value="5" style="width:100%" oninput="updateSim()"/>
-          <div class="small-text" id="sim-k-val">5 steps</div>
-          </div>
-        </div>
-        <div style="margin-top:16px;display:flex;align-items:center;gap:16px">
-          <button class="sim-btn" id="sim-run-btn" onclick="runSimulation()">▶ RUN K-STEP PREDICTION</button>
-          <div id="sim-result" class="small-text" style="color:var(--red);font-size:11px"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 09 BENCHMARK -->
-    <section class="page" id="page-benchmark">
-      <div class="sec-header">
-        <div class="sec-num">09 /</div>
-        <div class="sec-title">Benchmark &amp; Evaluation</div>
-        <div class="sec-meta">CIC-IDS-2017 VALIDATION SPLIT — SOURCE: results/world_model_benchmark.csv</div>
-      </div>
-
-      <!-- F1 + Lead Time bars side by side -->
-      <div class="grid-2">
-        <div class="panel">
-          <div class="panel-label">F1-SCORE COMPARISON</div>
-          <div class="model-label">LOGISTIC REGRESSION (BASELINE)</div>
-          <div class="bench-bar-wrap">
-            <div class="bench-bar" style="width:97.81%;background:#666">
-              <span class="bench-bar-label">Logistic Regression</span>
+          <div class="card">
+            <div class="card-header">// OBSERVED CAMPAIGNS</div>
+            <div class="campaign-list" id="campaignList">
+              <div class="campaign-tag">Loading...</div>
             </div>
-            <div class="bench-val">0.9781</div>
-          </div>
-          <div class="model-label">RANDOM FOREST (STATIC ML)</div>
-          <div class="bench-bar-wrap">
-            <div class="bench-bar" style="width:93.85%;background:#333">
-              <span class="bench-bar-label">Random Forest</span>
+            <div class="card-header" style="margin-top:1.2rem;">// THREAT LEVEL</div>
+            <div class="threat-meter">
+              <div class="threat-level-bar">
+                <div class="threat-fill" id="threatFill" style="width:0%"></div>
+              </div>
+              <div class="threat-labels">
+                <span>LOW</span><span>MEDIUM</span><span>HIGH</span><span>CRITICAL</span>
+              </div>
             </div>
-            <div class="bench-val">0.9385</div>
-          </div>
-          <div class="model-label" style="color:var(--red)">CAUSAL WORLD MODEL (OURS)</div>
-          <div class="bench-bar-wrap">
-            <div class="bench-bar" style="width:96.01%;background:var(--red)">
-              <span class="bench-bar-label">World Model Dynamics</span>
+            <div class="threat-tag-row">
+              <span class="threat-tag" id="threatTag">—</span>
             </div>
-            <div class="bench-val">0.9601</div>
           </div>
         </div>
+      </div>
 
-        <div class="panel">
-          <div class="panel-label">LEAD-TIME COMPARISON (ADVANCE WARNING)</div>
-          <div class="model-label">LOGISTIC REGRESSION</div>
-          <div class="bench-bar-wrap">
-            <div class="bench-val" style="color:var(--gray-m)">0.0s — REACTIVE ONLY ❌</div>
+      <!-- TAB: FORECAST -->
+      <div class="tab-panel" id="tab-forecast">
+        <div class="panel-header">
+          <span class="panel-title">// RISK FORECAST TRAJECTORY</span>
+          <span class="panel-sub">K-step autoregressive rollout</span>
+        </div>
+        <div class="card full-card">
+          <canvas id="forecastChart" height="300"></canvas>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header">// HISTORICAL (OBSERVED)</div>
+            <div id="histList" class="step-list"></div>
           </div>
-          <div class="model-label">RANDOM FOREST</div>
-          <div class="bench-bar-wrap">
-            <div class="bench-val" style="color:var(--gray-m)">0.0s — REACTIVE ONLY ❌</div>
+          <div class="card">
+            <div class="card-header">// PREDICTED (AI FORECAST)</div>
+            <div id="predList" class="step-list"></div>
           </div>
-          <div class="model-label" style="color:var(--red)">CAUSAL WORLD MODEL</div>
-          <div class="bench-bar-wrap">
-            <div class="bench-bar" style="width:100%;background:var(--red)">
-              <span class="bench-bar-label">World Model</span>
+        </div>
+        <div class="card" style="margin-top:1rem">
+          <div class="card-header">// KEY METRICS</div>
+          <div class="metric-row">
+            <div class="metric-box"><span class="metric-label">LEAD TIME</span><span class="metric-val" id="fcLeadTime">—s</span></div>
+            <div class="metric-box"><span class="metric-label">PEAK RISK</span><span class="metric-val" id="fcPeakRisk">—%</span></div>
+            <div class="metric-box"><span class="metric-label">FORECAST STEPS</span><span class="metric-val">K = 5</span></div>
+            <div class="metric-box"><span class="metric-label">WINDOW SIZE</span><span class="metric-val">2.0s</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: KILL CHAIN -->
+      <div class="tab-panel" id="tab-killchain">
+        <div class="panel-header">
+          <span class="panel-title">// MITRE ATT&CK KILL CHAIN</span>
+          <span class="panel-sub">39 real-world campaign priors</span>
+        </div>
+
+        <div class="chain-stages" id="chainStages">
+          <!-- populated by JS -->
+        </div>
+
+        <div class="two-col" style="margin-top:1rem">
+          <div class="card">
+            <div class="card-header">// NEXT PREDICTED TACTICS</div>
+            <div id="nextTacticsList" class="tactic-list"></div>
+          </div>
+          <div class="card">
+            <div class="card-header">// FORECAST CHAINS (TOP 3)</div>
+            <div id="forecastChains" class="chain-list"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:1rem">
+          <div class="card-header">// CAMPAIGN CONTEXT</div>
+          <div id="campaignContext" class="context-box">—</div>
+        </div>
+      </div>
+
+      <!-- TAB: EXPLAIN AI -->
+      <div class="tab-panel" id="tab-explain">
+        <div class="panel-header">
+          <span class="panel-title">// EXPLAINABLE AI</span>
+          <span class="panel-sub">gradient saliency + temporal attention</span>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header">// TOP FEATURES DRIVING ALERT</div>
+            <canvas id="featureChart" height="260"></canvas>
+          </div>
+          <div class="card">
+            <div class="card-header">// TEMPORAL ATTENTION HEATMAP</div>
+            <div class="attention-grid" id="attentionGrid"></div>
+            <div class="attn-label-row">
+              <span>T-9</span><span>T-8</span><span>T-7</span><span>T-6</span><span>T-5</span>
+              <span>T-4</span><span>T-3</span><span>T-2</span><span>T-1</span><span>NOW</span>
             </div>
-            <div class="bench-val" style="color:var(--cream)">10.0s – 20.0s ADVANCE WARNING ✅</div>
+            <div class="attn-description">
+              Each cell = how much a past time window influenced the AI's prediction.
+              Darker green = stronger influence.
+            </div>
           </div>
+        </div>
+        <div class="card" style="margin-top:1rem">
+          <div class="card-header">// PREDICTED OUTCOME</div>
+          <div class="outcome-box" id="outcomeBox">—</div>
         </div>
       </div>
 
-      <!-- Full real metrics table -->
-      <div class="panel mt12">
-        <div class="panel-label">FULL EVALUATION METRICS — results/world_model_benchmark.csv</div>
-        <table class="flow-table mt8">
-          <thead>
-            <tr>
-              <th>MODEL</th>
-              <th>ACCURACY</th>
-              <th>PRECISION</th>
-              <th>RECALL</th>
-              <th>F1-SCORE</th>
-              <th>ROC-AUC</th>
-              <th>FALSE POSITIVE RATE</th>
-              <th>LEAD TIME</th>
-              <th>PARADIGM</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Logistic Regression</td>
-              <td>97.18%</td>
-              <td>98.90%</td>
-              <td>97.18%</td>
-              <td>97.81%</td>
-              <td>99.73%</td>
-              <td>0.98%</td>
-              <td style="color:var(--gray-m)">0.0s ❌</td>
-              <td>Static Flow Classification</td>
-            </tr>
-            <tr>
-              <td>Random Forest</td>
-              <td>90.84%</td>
-              <td>98.40%</td>
-              <td>90.84%</td>
-              <td>93.85%</td>
-              <td>99.81%</td>
-              <td>0.98%</td>
-              <td style="color:var(--gray-m)">0.0s ❌</td>
-              <td>Static Flow Classification</td>
-            </tr>
-            <tr style="color:var(--red);font-weight:700">
-              <td>Causal World Model (OURS)</td>
-              <td>93.94%</td>
-              <td>98.78%</td>
-              <td>93.94%</td>
-              <td>96.01%</td>
-              <td>99.52%</td>
-              <td>1.96%</td>
-              <td style="color:var(--red)">10–20s ✅</td>
-              <td>Causal World Model P(S_t+1|S_t)</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="small-text mt8" style="color:var(--gray-m);line-height:1.8">
-          * All metrics computed on CIC-IDS-2017 held-out validation split (20% stratified).<br/>
-          * Lead Time = advance warning window before attack stage completion. Static classifiers output 0.0s — they classify current state only, no future prediction.<br/>
-          * World Model trades marginal FPR increase (+0.98%) for 10–20s predictive lead time — a net operational gain for proactive defence.
+      <!-- TAB: SIMULATE -->
+      <div class="tab-panel" id="tab-simulate">
+        <div class="panel-header">
+          <span class="panel-title">// WHAT-IF SIMULATOR</span>
+          <span class="panel-sub">run custom K-step rollout with your parameters</span>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header">// INPUT PARAMETERS</div>
+            <div class="slider-group">
+              <label>SYN Flood Rate <span id="synVal" class="slider-readout">5.2</span></label>
+              <input type="range" id="synSlider" min="0" max="20" step="0.1" value="5.2"
+                     oninput="document.getElementById('synVal').textContent=this.value" />
+            </div>
+            <div class="slider-group">
+              <label>Port Entropy <span id="entVal" class="slider-readout">3.5</span></label>
+              <input type="range" id="entSlider" min="0" max="8" step="0.1" value="3.5"
+                     oninput="document.getElementById('entVal').textContent=this.value" />
+            </div>
+            <div class="slider-group">
+              <label>Forecast Steps (K) <span id="kVal" class="slider-readout">5</span></label>
+              <input type="range" id="kSlider" min="1" max="10" step="1" value="5"
+                     oninput="document.getElementById('kVal').textContent=this.value" />
+            </div>
+            <button class="run-btn" id="runSimBtn" onclick="runSimulate()">▶ RUN SIMULATION</button>
+          </div>
+          <div class="card">
+            <div class="card-header">// SIMULATION RESULTS</div>
+            <div id="simResults" class="sim-result-box">
+              <span class="muted">// run simulation to see results</span>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:1rem">
+          <div class="card-header">// TRAJECTORY PREVIEW</div>
+          <canvas id="simChart" height="200"></canvas>
         </div>
       </div>
-    </section>
 
-    <!-- 10 INCIDENT REPORT -->
-    <section class="page" id="page-report">
-      <div class="sec-header">
-        <div class="sec-num">10 /</div>
-        <div class="sec-title">Incident Dossier & Intelligence Report</div>
-        <div class="sec-meta">CLASSIFIED FORENSIC BRIEFING</div>
-      </div>
-      <div class="panel">
-        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--cream-3);padding-bottom:8px;">
-          <div class="panel-label" style="margin:0;">DOSSIER FILE: NWF-28491 // CLASSIFIED // NOFORN</div>
-          <div style="display:flex;gap:8px;">
-            <button class="filter-btn active" onclick="window.print()">🖨️ PRINT DOSSIER (PDF)</button>
-            <button class="filter-btn" onclick="exportJsonReport()">💾 EXPORT JSON</button>
-          </div>
+      <!-- TAB: COMPARE -->
+      <div class="tab-panel" id="tab-compare">
+        <div class="panel-header">
+          <span class="panel-title">// MODEL COMPARISON</span>
+          <span class="panel-sub">CyberLens vs traditional classifiers</span>
         </div>
-        <div class="grid-2 mt8">
-          <div>
-            <div class="small-text" style="font-weight:700;color:var(--black);margin-bottom:6px;">INCIDENT EXECUTIVE SUMMARY</div>
-            <p class="small-text" style="line-height:1.8;">
-              • <strong>Incident Status:</strong> <span style="color:var(--red);font-weight:700;">ACTIVE HIGH-SEVERITY ESCALATION</span><br/>
-              • <strong>Adversary Trajectory:</strong> External Reconnaissance (10.0.2.15) → Initial Access (192.168.1.42) → Lateral Movement to Domain Controller (10.10.1.5)<br/>
-              • <strong>World Model Forecast:</strong> Infiltration probability <strong>87.4%</strong> with <strong>+18.4s advance predictive lead-time</strong>.<br/>
-              • <strong>Matched Threat Actor Campaign:</strong> Conti Ransomware / SolarWinds Supply-Chain (NCISS Severity 95/100).
-            </p>
-          </div>
-          <div>
-            <div class="small-text" style="font-weight:700;color:var(--black);margin-bottom:6px;">PROACTIVE DEFENSIVE RECOMMENDATIONS</div>
-            <p class="small-text" style="line-height:1.8;">
-              1. <strong>Isolate Host 192.168.1.42</strong> from internal VLAN to sever active C2 channel.<br/>
-              2. <strong>Block inbound TCP port 445 / 139</strong> at edge router to prevent SMB worm propagation.<br/>
-              3. <strong>Revoke Kerberos TGT tickets</strong> for compromised service accounts.<br/>
-              4. <strong>Quarantine target subnet 10.10.1.0/24</strong> pending memory dump verification.
-            </p>
-          </div>
+        <div class="card">
+          <table class="compare-table" id="compareTable">
+            <thead>
+              <tr>
+                <th>Model</th><th>Accuracy</th><th>F1-Score</th>
+                <th>ROC-AUC</th><th>FPR</th><th>Lead-Time</th>
+              </tr>
+            </thead>
+            <tbody id="compareBody">
+              <tr><td colspan="6" class="muted">Loading benchmark data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card" style="margin-top:1rem">
+          <div class="card-header">// LEAD-TIME ADVANTAGE (bar chart)</div>
+          <canvas id="compareChart" height="180"></canvas>
+        </div>
+        <div class="insight-box">
+          <span class="insight-icon">↯</span>
+          CyberLens is the <strong>only</strong> model with predictive lead-time.
+          Traditional classifiers react at T=0s — after damage is done.
+          CyberLens alerts up to <strong>+20 seconds early</strong>.
         </div>
       </div>
-    </section>
 
+    </div><!-- /content -->
   </main>
-</div>
 
-<script src="js/app.js"></script>
+  <!-- ── FOOTER ── -->
+  <footer class="footer">
+    <span>CyberLens // SIH PS #26153 // Python + PyTorch + MITRE ATT&CK</span>
+    <span>Fully Offline &nbsp;|&nbsp; No Cloud Dependencies &nbsp;|&nbsp; MIT License</span>
+  </footer>
+
+  <script src="js/app.js"></script>
 </body>
 </html>

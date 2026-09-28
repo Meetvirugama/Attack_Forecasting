@@ -1,19 +1,19 @@
 """
-Unit Tests for src.forecaster (KStepForecaster)
+Unit Tests for src.forecaster (RiskForecaster)
 """
 import unittest
 import numpy as np
 import torch
-from ml.world_model_core import WorldModelDynamics
-from ml.forecaster import KStepForecaster
+from ml.threat_predictor import ThreatPredictor
+from ml.risk_forecaster import RiskForecaster
 
 
-class TestKStepForecaster(unittest.TestCase):
+class TestRiskForecaster(unittest.TestCase):
 
     def setUp(self):
-        model = WorldModelDynamics(input_dim=30, hidden_dim=64, num_lstm_layers=1, dropout=0.0)
+        model = ThreatPredictor(input_dim=30, hidden_dim=64, num_lstm_layers=1, dropout=0.0)
         model.eval()
-        self.forecaster = KStepForecaster(model=model, compromise_threshold=0.65, window_duration_seconds=2.0)
+        self.forecaster = RiskForecaster(model=model, compromise_threshold=0.65, window_duration_seconds=2.0)
 
     def test_forecast_returns_correct_k_steps(self):
         history = np.zeros((10, 30), dtype=np.float32)

@@ -21,7 +21,7 @@ ROOT_DIR = Path(__file__).resolve().parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from backend.api import run_server
+from backend.api import start as run_server
 
 
 def open_browser(port: int) -> None:
