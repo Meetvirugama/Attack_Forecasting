@@ -120,13 +120,103 @@ class AIService:
         except Exception as e:
             log.error(f"Failed to load path mapper: {e}")
 
-        # Default active history: escalating reconnaissance pattern
-        self._history = np.zeros((10, 30), dtype=np.float32)
-        self._history[-4:, 12] = 5.2   # syn_flag_count
-        self._history[-4:, 27] = 3.5   # dst_port_entropy
-        self._history[-3:, 0]  = 3.8   # flow_count
-        self._history[-2:, 17] = 2.4   # psh_flag_count
-        self._history[-1:, 1]  = 4.1   # total_fwd_bytes
+        # Default: escalating infiltration pattern (strong multi-feature signal)
+        self._history = self._make_history('infiltration')
+
+    # ── Scenario History Factory ─────────────────────────────────────────────
+    @staticmethod
+    def _make_history(scenario: str) -> np.ndarray:
+        """
+        Build a 10×30 history tensor with realistic attack signatures.
+        Features (indices):
+          0=flow_count, 1=total_fwd_bytes, 2=total_bwd_bytes, 3=bytes_per_sec,
+          4=packets_per_sec, 5=bwd_to_fwd_ratio, 6=mean_flow_duration,
+          7=iat_mean, 8=iat_std, 9=iat_max, 10=active_mean, 11=idle_mean,
+          12=syn_flag_count, 13=ack_flag_count, 14=fin_flag_count, 15=rst_flag_count,
+          16=psh_flag_count, 17=urg_flag_count, 18=syn_ack_ratio, 19=rst_to_all_ratio,
+          20=ttl_mean, 21=ttl_variance, 22=init_win_fwd, 23=init_win_bwd,
+          24=min_seg_size, 25=avg_packet_size, 26=packet_size_variance,
+          27=dst_port_entropy, 28=privileged_port_ratio, 29=unique_dst_ports
+        """
+        h = np.zeros((10, 30), dtype=np.float32)
+        # Ramp up: first 5 steps near-zero, then escalate over last 5
+        ramp = np.linspace(0.1, 1.0, 10)
+
+        if scenario in ('infiltration', 'default'):
+            # Infiltration: high SYN, high port entropy, rising flow count
+            for t in range(10):
+                r = ramp[t]
+                h[t, 0]  = 4.2 * r      # flow_count
+                h[t, 1]  = 8.5 * r      # total_fwd_bytes
+                h[t, 3]  = 6.0 * r      # bytes_per_sec
+                h[t, 4]  = 5.5 * r      # packets_per_sec
+                h[t, 12] = 9.2 * r      # syn_flag_count  ← key signal
+                h[t, 13] = 2.1 * r      # ack_flag_count
+                h[t, 16] = 3.8 * r      # psh_flag_count
+                h[t, 18] = 7.5 * r      # syn_ack_ratio   ← key signal
+                h[t, 27] = 4.8 * r      # dst_port_entropy ← key signal
+                h[t, 29] = 6.2 * r      # unique_dst_ports
+
+        elif scenario == 'portscan':
+            # Port scan: massive port entropy + unique ports, low data volume
+            for t in range(10):
+                r = ramp[t]
+                h[t, 0]  = 2.0 * r
+                h[t, 4]  = 3.5 * r
+                h[t, 12] = 12.0 * r     # very high SYN
+                h[t, 15] = 8.0 * r      # high RST (refused connections)
+                h[t, 18] = 15.0 * r     # extreme syn_ack_ratio
+                h[t, 19] = 9.0 * r      # rst_to_all_ratio
+                h[t, 27] = 7.5 * r      # maximum port entropy
+                h[t, 28] = 6.0 * r      # privileged_port_ratio
+                h[t, 29] = 10.0 * r     # unique_dst_ports
+
+        elif scenario in ('patator', 'bruteforce'):
+            # Brute force: steady login attempts, low entropy, high SYN
+            for t in range(10):
+                r = ramp[t]
+                h[t, 0]  = 5.0 * r
+                h[t, 1]  = 3.5 * r
+                h[t, 4]  = 8.0 * r      # high packet rate
+                h[t, 8]  = 0.5 * r      # very low IAT std (regular timing)
+                h[t, 12] = 8.5 * r      # high SYN
+                h[t, 13] = 7.0 * r      # high ACK (complete handshakes)
+                h[t, 18] = 4.5 * r      # moderate syn_ack_ratio
+                h[t, 27] = 0.3 * r      # LOW entropy (targeting one port)
+                h[t, 28] = 9.0 * r      # privileged ports (22/21/80)
+
+        elif scenario == 'dos':
+            # DoS: massive volume, low variety, high packet rate
+            for t in range(10):
+                r = ramp[t]
+                h[t, 0]  = 8.0 * r
+                h[t, 1]  = 15.0 * r     # huge fwd bytes
+                h[t, 3]  = 20.0 * r     # bytes_per_sec
+                h[t, 4]  = 18.0 * r     # packets_per_sec
+                h[t, 5]  = 0.1 * r      # low bwd (one-way flood)
+                h[t, 12] = 10.0 * r     # SYN flood
+                h[t, 16] = 6.0 * r      # PSH
+                h[t, 27] = 1.5 * r      # low port entropy (single target)
+
+        elif scenario == 'ddos':
+            # DDoS: extreme volume from many sources
+            for t in range(10):
+                r = ramp[t]
+                h[t, 0]  = 15.0 * r     # massive flow count
+                h[t, 1]  = 20.0 * r
+                h[t, 3]  = 25.0 * r
+                h[t, 4]  = 22.0 * r
+                h[t, 12] = 14.0 * r
+                h[t, 13] = 12.0 * r
+                h[t, 21] = 5.0 * r      # TTL variance (many sources)
+                h[t, 27] = 2.5 * r
+                h[t, 29] = 4.0 * r
+
+        return h
+
+    def set_scenario(self, scenario: str):
+        """Switch the active history to a given scenario pattern."""
+        self._history = self._make_history(scenario)
 
     # ── Threat Overview ───────────────────────────────────────────────────────
     def get_threat_status(self) -> dict:
@@ -261,6 +351,8 @@ class AIService:
         X, _, _ = analyzer.fit_transform(df)
         if len(X) > 0:
             self._history = X[-1]
+        else:
+            self.set_scenario(name)  # fallback to synthetic pattern
 
         return {
             "scenario":         name,
@@ -269,6 +361,16 @@ class AIService:
             "overview":         self.get_threat_status(),
             "forecast":         self.get_forecast(),
             "explainability":   self.get_explanation(),
+        }
+
+    def switch_scenario(self, name: str) -> dict:
+        """Switch history to a synthetic scenario pattern (no parquet needed)."""
+        self.set_scenario(name)
+        return {
+            "scenario":      name,
+            "overview":      self.get_threat_status(),
+            "forecast":      self.get_forecast(),
+            "explainability": self.get_explanation(),
         }
 
     # ── Custom Simulation ─────────────────────────────────────────────────────
@@ -370,6 +472,7 @@ class CyberLensHandler(SimpleHTTPRequestHandler):
             "/api/explain":  lambda: _ai.get_explanation(),
             "/api/mitre":    lambda: _ai.get_mitre(params.get("tactic", ["TA0001"])[0]),
             "/api/scenario": lambda: _ai.load_scenario(params.get("name", ["infiltration"])[0]),
+            "/api/switch":   lambda: _ai.switch_scenario(params.get("name", ["infiltration"])[0]),
             "/api/benchmark":lambda: _ai.get_benchmark(),
             # Legacy aliases for frontend compatibility
             "/api/threat-overview":  lambda: _ai.get_threat_status(),

@@ -22,12 +22,17 @@ const post = async (path, body) => {
 };
 
 export const api = {
-  scenario:  (name)  => get(`/scenario?name=${name}`),
-  forecast:  (k = 5) => get(`/forecast?k=${k}`),
-  explain:   ()      => get('/explain'),
+  // Full scenario with parquet data (requires CIC-IDS-2017 files)
+  scenario:  (name)   => get(`/scenario?name=${name}`),
+  // Synthetic scenario switch (always works, uses AI model)
+  switch:    (name)   => get(`/switch?name=${name}`),
+  // Individual endpoints
+  status:    ()       => get('/status'),
+  forecast:  (k = 5)  => get(`/forecast?k=${k}`),
+  explain:   ()       => get('/explain'),
   mitre:     (tactic) => get(`/mitre?tactic=${tactic}`),
-  benchmark: ()      => get('/benchmark'),
-  simulate:  (body)  => post('/simulate', body),
+  benchmark: ()       => get('/benchmark'),
+  simulate:  (body)   => post('/simulate', body),
 };
 
 export default api;
