@@ -87,15 +87,15 @@ export default function KillChain({ data }) {
         <div className="card">
           <div className="card-title">// CAMPAIGN CONTEXT</div>
           <div className="context-text">
-            Tactic: <span style={{ color: 'var(--green-dim)' }}>
+            Tactic: <span style={{ color: 'var(--green-dim)', fontWeight: 600 }}>
               {mitreData.campaign_context.tactic_id ?? '—'}
             </span>
             &nbsp;|&nbsp;
-            Matching Campaigns: <span style={{ color: 'var(--green-dim)' }}>
+            Matching Campaigns: <span style={{ color: 'var(--green-dim)', fontWeight: 600 }}>
               {mitreData.campaign_context.campaign_count ?? '—'}
             </span>
             &nbsp;|&nbsp;
-            Avg Severity: <span style={{ color: 'var(--amber)' }}>
+            Avg Severity: <span style={{ color: 'var(--amber)', fontWeight: 600 }}>
               {mitreData.campaign_context.avg_severity ?? '—'}/100
             </span>
             <br />

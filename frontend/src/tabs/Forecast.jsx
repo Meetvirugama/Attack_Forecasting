@@ -19,8 +19,9 @@ export default function Forecast({ data }) {
   ];
 
   const tooltipStyle = {
-    background: '#111a11', border: '1px solid #1f3320',
-    fontFamily: 'JetBrains Mono', fontSize: '0.65rem', color: '#c8e6c8',
+    background: '#131f13', border: '1px solid #233823',
+    fontFamily: 'JetBrains Mono', fontSize: '0.65rem', color: '#b8dbb8',
+    borderRadius: '4px',
   };
 
   return (
@@ -33,26 +34,26 @@ export default function Forecast({ data }) {
       {/* Main chart */}
       <div className="card">
         <div className="card-title">// RISK TRAJECTORY (observed + predicted)</div>
-        <ResponsiveContainer width="100%" height={240}>
-          <AreaChart data={combined} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+        <ResponsiveContainer width="100%" height={260}>
+          <AreaChart data={combined} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="gHist" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor="#00c832" stopOpacity={0.2} />
-                <stop offset="95%" stopColor="#00c832" stopOpacity={0}   />
+                <stop offset="5%"  stopColor="#00ff41" stopOpacity={0.15} />
+                <stop offset="95%" stopColor="#00ff41" stopOpacity={0}   />
               </linearGradient>
               <linearGradient id="gPred" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor="#ef4444" stopOpacity={0.2} />
-                <stop offset="95%" stopColor="#ef4444" stopOpacity={0}   />
+                <stop offset="5%"  stopColor="#ff3b3b" stopOpacity={0.15} />
+                <stop offset="95%" stopColor="#ff3b3b" stopOpacity={0}   />
               </linearGradient>
             </defs>
-            <CartesianGrid stroke="#1f3320" strokeDasharray="3 3" />
-            <XAxis dataKey="time" tick={{ fill: '#3a5a3a', fontFamily: 'JetBrains Mono', fontSize: 10 }} />
-            <YAxis domain={[0, 105]} tickFormatter={v => `${v}%`} tick={{ fill: '#3a5a3a', fontFamily: 'JetBrains Mono', fontSize: 10 }} />
+            <CartesianGrid stroke="#1a2e1a" strokeDasharray="3 3" />
+            <XAxis dataKey="time" tick={{ fill: '#5a8a5a', fontFamily: 'JetBrains Mono', fontSize: 10 }} />
+            <YAxis domain={[0, 105]} tickFormatter={v => `${v}%`} tick={{ fill: '#5a8a5a', fontFamily: 'JetBrains Mono', fontSize: 10 }} />
             <Tooltip contentStyle={tooltipStyle} formatter={v => `${v?.toFixed(1)}%`} />
-            <ReferenceLine x="NOW" stroke="#3a5a3a" strokeDasharray="4 4" label={{ value: 'NOW', fill: '#3a5a3a', fontFamily: 'JetBrains Mono', fontSize: 9 }} />
-            <Area type="monotone" dataKey="hist" name="Observed"   stroke="#00c832" fill="url(#gHist)" strokeWidth={2} dot={{ fill: '#00c832', r: 3 }} connectNulls />
-            <Area type="monotone" dataKey="pred" name="AI Forecast" stroke="#ef4444" fill="url(#gPred)" strokeWidth={2} strokeDasharray="6 3" dot={{ fill: '#ef4444', r: 3 }} connectNulls />
-            <Legend wrapperStyle={{ fontFamily: 'JetBrains Mono', fontSize: '0.65rem', color: '#6b9b6b' }} />
+            <ReferenceLine x="NOW" stroke="#3d5e3d" strokeDasharray="4 4" label={{ value: 'NOW', fill: '#5a8a5a', fontFamily: 'JetBrains Mono', fontSize: 9 }} />
+            <Area type="monotone" dataKey="hist" name="Observed"   stroke="#00ff41" fill="url(#gHist)" strokeWidth={2} dot={{ fill: '#00ff41', r: 3 }} connectNulls />
+            <Area type="monotone" dataKey="pred" name="AI Forecast" stroke="#ff3b3b" fill="url(#gPred)" strokeWidth={2} strokeDasharray="6 3" dot={{ fill: '#ff3b3b', r: 3 }} connectNulls />
+            <Legend wrapperStyle={{ fontFamily: 'JetBrains Mono', fontSize: '0.65rem', color: '#b8dbb8', paddingTop: '10px' }} />
           </AreaChart>
         </ResponsiveContainer>
       </div>

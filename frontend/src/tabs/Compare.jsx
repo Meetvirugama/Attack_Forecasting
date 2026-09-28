@@ -23,8 +23,9 @@ export default function Compare() {
   }));
 
   const tooltipStyle = {
-    background: '#111a11', border: '1px solid #1f3320',
-    fontFamily: 'JetBrains Mono', fontSize: '0.65rem', color: '#c8e6c8',
+    background: '#131f13', border: '1px solid #233823',
+    fontFamily: 'JetBrains Mono', fontSize: '0.65rem', color: '#b8dbb8',
+    borderRadius: '4px',
   };
 
   return (
@@ -56,7 +57,7 @@ export default function Compare() {
                   <td>{fmt(row['F1-Score'])}</td>
                   <td>{fmt(row['ROC-AUC'])}</td>
                   <td>{row.FPR ?? '—'}</td>
-                  <td style={{ color: isCyber ? 'var(--green)' : 'var(--muted)' }}>
+                  <td style={{ color: isCyber ? 'var(--green)' : 'var(--muted2)' }}>
                     {row['Lead-Time'] ?? row['lead_time'] ?? '—'}
                   </td>
                 </tr>
@@ -69,15 +70,15 @@ export default function Compare() {
       {/* Lead-time chart */}
       <div className="card">
         <div className="card-title">// LEAD-TIME ADVANTAGE</div>
-        <ResponsiveContainer width="100%" height={160}>
-          <BarChart layout="vertical" data={leadData} margin={{ top: 5, right: 50, left: 120, bottom: 5 }}>
-            <CartesianGrid stroke="#1f3320" strokeDasharray="3 3" horizontal={false} />
-            <XAxis type="number" tickFormatter={v => `${v}s`} tick={{ fill: '#3a5a3a', fontFamily: 'JetBrains Mono', fontSize: 9 }} />
-            <YAxis type="category" dataKey="name" tick={{ fill: '#6b9b6b', fontFamily: 'JetBrains Mono', fontSize: 9 }} width={120} />
+        <ResponsiveContainer width="100%" height={180}>
+          <BarChart layout="vertical" data={leadData} margin={{ top: 15, right: 50, left: 130, bottom: 5 }}>
+            <CartesianGrid stroke="#1a2e1a" strokeDasharray="3 3" horizontal={false} />
+            <XAxis type="number" tickFormatter={v => `${v}s`} tick={{ fill: '#5a8a5a', fontFamily: 'JetBrains Mono', fontSize: 10 }} />
+            <YAxis type="category" dataKey="name" tick={{ fill: '#b8dbb8', fontFamily: 'JetBrains Mono', fontSize: 10 }} width={130} />
             <Tooltip contentStyle={tooltipStyle} formatter={v => `+${v}s`} />
-            <Bar dataKey="lead" radius={[0, 2, 2, 0]} label={{ position: 'right', formatter: v => v > 0 ? `+${v}s` : '0s', fill: '#6b9b6b', fontFamily: 'JetBrains Mono', fontSize: 9 }}>
+            <Bar dataKey="lead" radius={[0, 4, 4, 0]} label={{ position: 'right', formatter: v => v > 0 ? `+${v}s` : '0s', fill: '#5a8a5a', fontFamily: 'JetBrains Mono', fontSize: 10 }}>
               {leadData.map((d, i) => (
-                <Cell key={i} fill={d.lead > 0 ? '#00c832' : '#3a5a3a'} />
+                <Cell key={i} fill={d.lead > 0 ? '#00ff41' : '#2d4d2d'} />
               ))}
             </Bar>
           </BarChart>

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import './index.css';
 
-import Header   from './components/Header';
-import Toolbar  from './components/Toolbar';
-import Sidebar  from './components/Sidebar';
-import Overview from './tabs/Overview';
-import Forecast from './tabs/Forecast';
+import Header    from './components/Header';
+import Toolbar   from './components/Toolbar';
+import Sidebar   from './components/Sidebar';
+import Overview  from './tabs/Overview';
+import Forecast  from './tabs/Forecast';
 import KillChain from './tabs/KillChain';
 import ExplainAI from './tabs/ExplainAI';
 import Simulate  from './tabs/Simulate';
@@ -43,6 +43,7 @@ export default function App() {
         scenario={scenario}
         onScenario={handleScenario}
         onRefresh={refresh}
+        loading={loading}
       />
 
       <div className="cl-body">
@@ -50,7 +51,7 @@ export default function App() {
 
         <main className="cl-content">
           {loading
-            ? <div className="loading-pulse">// Fetching data from backend...</div>
+            ? <div className="loading-pulse">// Fetching AI inference from backend...</div>
             : <TabComponent data={data} />
           }
         </main>

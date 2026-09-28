@@ -30,8 +30,9 @@ export default function Simulate() {
   })) ?? [];
 
   const tooltipStyle = {
-    background: '#111a11', border: '1px solid #1f3320',
-    fontFamily: 'JetBrains Mono', fontSize: '0.65rem', color: '#c8e6c8',
+    background: '#131f13', border: '1px solid #233823',
+    fontFamily: 'JetBrains Mono', fontSize: '0.65rem', color: '#b8dbb8',
+    borderRadius: '4px',
   };
 
   return (
@@ -100,7 +101,7 @@ export default function Simulate() {
                 <div key={s.step} className="sim-row">
                   <span className="sim-label">STEP {s.step}</span>
                   <span className={`sim-val${s.prob_pct > 65 ? ' danger' : ''}`}>{s.prob_pct}%</span>
-                  <span className="sim-label">{s.stage}</span>
+                  <span className="sim-label" style={{flex: 1, textAlign: 'right'}}>{s.stage}</span>
                 </div>
               ))}
             </>
@@ -110,16 +111,16 @@ export default function Simulate() {
 
       {/* Trajectory Chart */}
       {chartData.length > 0 && (
-        <div className="card">
+        <div className="card" style={{ marginTop: '0.65rem' }}>
           <div className="card-title">// TRAJECTORY PREVIEW</div>
-          <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={chartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
-              <CartesianGrid stroke="#1f3320" strokeDasharray="3 3" />
-              <XAxis dataKey="step" tick={{ fill: '#3a5a3a', fontFamily: 'JetBrains Mono', fontSize: 10 }} />
-              <YAxis domain={[0, 105]} tickFormatter={v => `${v}%`} tick={{ fill: '#3a5a3a', fontFamily: 'JetBrains Mono', fontSize: 10 }} />
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={chartData} margin={{ top: 15, right: 20, left: -20, bottom: 5 }}>
+              <CartesianGrid stroke="#1a2e1a" strokeDasharray="3 3" />
+              <XAxis dataKey="step" tick={{ fill: '#5a8a5a', fontFamily: 'JetBrains Mono', fontSize: 10 }} />
+              <YAxis domain={[0, 105]} tickFormatter={v => `${v}%`} tick={{ fill: '#5a8a5a', fontFamily: 'JetBrains Mono', fontSize: 10 }} />
               <Tooltip contentStyle={tooltipStyle} formatter={v => `${v}%`} />
-              <ReferenceLine y={65} stroke="#ef4444" strokeDasharray="4 4" label={{ value: 'Alert', fill: '#ef4444', fontFamily: 'JetBrains Mono', fontSize: 9 }} />
-              <Line type="monotone" dataKey="risk" stroke="#00c832" strokeWidth={2} dot={{ fill: '#00c832', r: 4 }} activeDot={{ r: 6, fill: '#00ff41' }} />
+              <ReferenceLine y={65} stroke="#ff3b3b" strokeDasharray="4 4" label={{ value: 'Alert', fill: '#ff3b3b', fontFamily: 'JetBrains Mono', fontSize: 9 }} />
+              <Line type="monotone" dataKey="risk" stroke="#00ff41" strokeWidth={2} dot={{ fill: '#00ff41', r: 4 }} activeDot={{ r: 6, fill: '#00ff41', stroke: '#00ff41', strokeWidth: 2 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
