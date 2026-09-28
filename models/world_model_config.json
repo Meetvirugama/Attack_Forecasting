@@ -1,0 +1,5 @@
+{
+  "input_dim": 30,
+  "hidden_dim": 128,
+  "num_mitre_stages": 6
+}

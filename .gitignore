@@ -1,0 +1,61 @@
+# ──────────────────────────────────────────────
+# Attack Forecasting — .gitignore
+# SIH Problem Statement #26153
+# ──────────────────────────────────────────────
+
+# Python Cache & Compiled Files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# Environment Variables (contains secrets)
+.env
+
+# IDE & OS Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Heavy Raw Telemetry Datasets (download via Kaggle / CIC-IDS)
+data/raw/*.parquet
+data/raw/*.csv
+data/raw/*.pcap
+data/raw/*.txt
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Logs & Temporary Files
+logs/*.log
+*.log
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build Artifacts
+dist/
+build/
+*.egg-info/
+
+# Legacy Backend Directory (now replaced by src/ + app/)
+# Kept in repo for reference — remove this line to include it
+backend/

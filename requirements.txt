@@ -1,0 +1,38 @@
+# ============================================================
+# AI Network Attack Forecasting using World Models
+# SIH Problem Statement #26153
+# Python 3.10+
+# Open-source, fully offline deployment
+# ============================================================
+
+# --- Core Data Science ---
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.10.0
+pyarrow>=12.0.0          # Parquet file I/O for CIC-IDS-2017
+
+# --- Machine Learning (Baseline Models) ---
+scikit-learn>=1.3.0
+xgboost>=2.0.0
+imbalanced-learn>=0.11.0 # SMOTE class balancing
+
+# --- Deep Learning (World Model Dynamics) ---
+torch>=2.0.0             # PyTorch LSTM + Multi-Head Attention world model
+
+# --- Explainable AI ---
+shap>=0.42.0             # SHAP feature attribution
+
+# --- Network & Packet Capture ---
+scapy>=2.5.0             # Live packet sniffing (PCAP / wire)
+
+# --- Visualization ---
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.14.0
+
+# --- Dashboard (Offline SOC Console) ---
+streamlit>=1.25.0
+
+# --- Utilities ---
+joblib>=1.3.0
+tqdm>=4.65.0
