@@ -86,9 +86,9 @@ class AIService:
                 with open(cfg_path) as f:
                     cfg = json.load(f)
                 self.model = ThreatPredictor(
-                    input_dim      = cfg["input_dim"],
-                    hidden_dim     = cfg["hidden_dim"],
-                    num_stages     = cfg.get("num_mitre_stages", 6),
+                    input_dim        = cfg["input_dim"],
+                    hidden_dim       = cfg["hidden_dim"],
+                    num_mitre_stages = cfg.get("num_mitre_stages", 6),
                 )
                 self.model.load_state_dict(
                     torch.load(weights_path, map_location="cpu", weights_only=True)
@@ -108,8 +108,8 @@ class AIService:
         if self.model is not None:
             self.forecaster = RiskForecaster(
                 model=self.model,
-                alert_threshold=0.65,
-                window_seconds=2.0,
+                compromise_threshold=0.65,
+                window_duration_seconds=2.0,
             )
             self.insight = FeatureInsight(model=self.model)
 
@@ -245,7 +245,7 @@ class AIService:
         df = pd.read_parquet(fpath)
         df.columns = df.columns.str.strip()
 
-        analyzer = TrafficAnalyzer(window_size=20, seq_length=10)
+        analyzer = TrafficAnalyzer(window_size=20, sequence_length=10)
 
         label_col = "Label" if "Label" in df.columns else "label"
         malicious = df[df[label_col].astype(str).str.strip().str.upper() != "BENIGN"]
