@@ -30,7 +30,7 @@ class RiskForecaster:
 
     def __init__(
         self,
-        model: WorldModelDynamics,
+        model: ThreatPredictor,
         device: Optional[str] = None,
         compromise_threshold: float = 0.65,
         window_duration_seconds: float = 2.0
@@ -142,4 +142,20 @@ class RiskForecaster:
             'final_stage_name': MITREMapper.get_stage_name(final_stage),
             'top_driving_features': top_driving_features,
             'attention_weights': latest_attention
+        }
+
+    def predict(self, history: np.ndarray, steps: int = 5) -> Dict[str, Any]:
+        """
+        Public alias called by api.py.
+        Calls forecast_trajectory and remaps keys to the API contract:
+          risk_scores, stage_names, max_risk, lead_time
+        """
+        raw = self.forecast_trajectory(history, k_steps=steps)
+        return {
+            'risk_scores':   raw['infiltration_probabilities'],
+            'stage_names':   raw['stage_names'],
+            'stage_colors':  raw['stage_colors'],
+            'max_risk':      raw['max_risk_score'],
+            'lead_time':     raw['lead_time_seconds'],
+            'attention_weights': raw['attention_weights'],
         }

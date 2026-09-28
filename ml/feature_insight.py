@@ -120,3 +120,7 @@ class FeatureInsight:
             plt.close(fig)
 
         return fig
+
+    def explain(self, x_seq: np.ndarray, target_stage: Optional[int] = None) -> dict:
+        """Public alias called by api.py — delegates to explain_sequence."""
+        return self.explain_sequence(x_seq, target_stage=target_stage)
