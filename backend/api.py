@@ -31,7 +31,7 @@ import joblib
 # ── Paths ──────────────────────────────────────────────────────────────────────
 _HERE     = Path(__file__).resolve().parent
 ROOT      = _HERE.parent
-FRONTEND  = ROOT / "frontend"
+FRONTEND  = ROOT / "frontend" / "dist"   # React production build
 MODELS    = ROOT / "models"
 RESULTS   = ROOT / "results"
 DATA      = ROOT / "data"

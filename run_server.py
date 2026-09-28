@@ -1,58 +1,51 @@
 """
-AI Network Attack Forecasting — Server & Dashboard Launcher
+CyberLens — Server Launcher
 SIH Problem Statement #26153
 
-Launches the Python backend REST API server on port 8000 and opens
-the Cyber Forensics Web Dashboard in the default browser.
+Starts the Python backend API on port 8000.
+In production, it also serves the React build from frontend/dist/.
 
 Usage:
-    python run_server.py            # starts on port 8000
-    python run_server.py 9000       # starts on custom port
+  python run_server.py           # start on default port 8000
+  python run_server.py 9000      # start on custom port
+
+The React dev server runs separately on port 5173:
+  cd frontend && npm run dev
 """
 
 import sys
+import os
 import webbrowser
 import threading
 import time
 from pathlib import Path
 
-# Ensure project root is on sys.path
-ROOT_DIR = Path(__file__).resolve().parent
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+ROOT = Path(__file__).resolve().parent
 
-from backend.api import start as run_server
+def open_browser(port: int, delay: float = 1.5):
+    """Open browser after a short delay to let the server start."""
+    time.sleep(delay)
+    webbrowser.open(f'http://localhost:{port}/')
 
+def main():
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
 
-def open_browser(port: int) -> None:
-    """Opens the dashboard in the default browser after a short startup delay."""
-    time.sleep(1.0)
-    url = f"http://localhost:{port}/"
-    print(f"\n[+] Opening Dashboard in browser: {url}")
-    webbrowser.open(url)
+    # Point backend to the React production build
+    dist = ROOT / 'frontend' / 'dist'
+    if not dist.exists():
+        print(f"[CyberLens] React build not found at {dist}")
+        print("[CyberLens] Run: cd frontend && npm run build")
+        print("[CyberLens] For dev mode: cd frontend && npm run dev")
 
+    # Open browser in background thread
+    threading.Thread(target=open_browser, args=(port,), daemon=True).start()
 
-def main() -> None:
-    port = 8000
-    if len(sys.argv) > 1:
-        try:
-            port = int(sys.argv[1])
-        except ValueError:
-            print(f"[!] Invalid port argument '{sys.argv[1]}', using default 8000.")
+    # Import and start API server
+    from backend.api import start
+    print(f"[CyberLens] Starting server on http://localhost:{port}/")
+    print(f"[CyberLens] React app served from: frontend/dist/")
+    print(f"[CyberLens] Press Ctrl+C to stop.\n")
+    start(port)
 
-    print("=" * 65)
-    print("  [NIDS-ML] AI NETWORK ATTACK FORECASTING — DEFENSE CONSOLE")
-    print("           SIH Problem Statement #26153 (World Models)")
-    print("=" * 65)
-    print(f"[*] Starting REST API Backend & Serving Frontend on port {port}...")
-
-    # Launch browser in a separate daemon thread so it doesn't block
-    browser_thread = threading.Thread(target=open_browser, args=(port,), daemon=True)
-    browser_thread.start()
-
-    # Run server (blocking call — Ctrl+C to stop)
-    run_server(port)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

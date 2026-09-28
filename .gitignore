@@ -59,3 +59,9 @@ build/
 
 
 
+
+# React / Node
+frontend/node_modules/
+frontend/dist/
+frontend/_vanilla_backup/
+
