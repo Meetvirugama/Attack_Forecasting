@@ -1,67 +1,52 @@
-# ──────────────────────────────────────────────
-# Attack Forecasting — .gitignore
-# SIH Problem Statement #26153
-# ──────────────────────────────────────────────
-
-# Python Cache & Compiled Files
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
+*.pyo
+*.pyd
 *.so
-.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.pyc
 
-# Virtual Environments
+# Virtual environments
 venv/
 env/
-ENV/
 .venv/
-
-# Environment Variables (contains secrets)
 .env
+*.env
 
-# IDE & OS Files
+# PyTorch model weights (large binary files)
+# models/*.pt
+# models/*.pkl
+
+# Raw dataset files (large, not for version control)
+data/raw/
+data/processed/
+
+# Logs
+logs/
+*.log
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
-.DS_Store
-Thumbs.db
 
-# Heavy Raw Telemetry Datasets (download via Kaggle / CIC-IDS)
-data/raw/*.parquet
-data/raw/*.csv
-data/raw/*.pcap
-data/raw/*.txt
-
-# Jupyter Notebooks
+# Jupyter
 .ipynb_checkpoints/
-*.ipynb
 
-# Logs & Temporary Files
-logs/*.log
-*.log
-*.tmp
-*.temp
-temp/
-tmp/
-
-# Testing & Coverage
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Build Artifacts
-dist/
-build/
-*.egg-info/
-
-
-
-
-
-# React / Node
-frontend/node_modules/
-frontend/dist/
-frontend/_vanilla_backup/
-
+# Results (optional — commit benchmark CSV, not plots)
+results/plots/

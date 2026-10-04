@@ -269,7 +269,7 @@ class AIService:
             {
                 "step": i + 1,
                 "offset_seconds": (i + 1) * 2.0,
-                "time_label": f"+{(i+1)*5}m",
+                "time_label": f"+{(i+1)*2}s",
                 "prob": round(float(p) * 100, 1),
                 "stage": s,
                 "risk_level": "CRITICAL" if p > 0.8 else "HIGH" if p > 0.6 else "MEDIUM",

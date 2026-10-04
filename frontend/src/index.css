@@ -2,7 +2,9 @@
    CyberLens — Premium Design System  v2.0
    Dark military-grade SOC terminal aesthetic
 ═══════════════════════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+/* Offline-safe: using system monospace stack instead of Google Fonts CDN */
+/* @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap'); */
+
 
 /* ── TOKENS ── */
 :root {
@@ -34,8 +36,8 @@
   --text:        #b8dbb8;
   --text-dim:    #5a8a5a;
 
-  --mono:  'JetBrains Mono', monospace;
-  --sans:  'Inter', sans-serif;
+  --mono:  'JetBrains Mono', 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+  --sans:  'Inter', 'Segoe UI', 'Roboto', system-ui, sans-serif;
   --radius: 4px;
   --radius2: 6px;
   --ease:  cubic-bezier(0.4, 0, 0.2, 1);
