@@ -6,6 +6,7 @@
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-ee4c2c.svg)](https://pytorch.org/)
 [![React](https://img.shields.io/badge/React-18%2B-61dafb.svg)](https://reactjs.org/)
+[![YouTube Demo](https://img.shields.io/badge/Demo-YouTube-FF0000.svg?logo=youtube&logoColor=white)](https://youtu.be/p0AGdyPQtA0)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-Meetvirugama%2FAttack__Forecasting-181717.svg?logo=github)](https://github.com/Meetvirugama/Attack_Forecasting)
 
@@ -21,6 +22,16 @@
 | **PS Title** | AI based Network Attack Forecasting from Network Traffic Data |
 | **Theme** | Blockchain & Cybersecurity |
 | **PS Category** | Software |
+| **Demo Video** | [📺 Watch on YouTube](https://youtu.be/p0AGdyPQtA0) |
+
+---
+
+## 🎥 Live Demo Video
+
+[![CyberLens Demo Video](https://img.youtube.com/vi/p0AGdyPQtA0/hqdefault.jpg)](https://youtu.be/p0AGdyPQtA0)
+
+> 📺 **Watch the complete walkthrough:** [https://youtu.be/p0AGdyPQtA0](https://youtu.be/p0AGdyPQtA0)
+
 
 ---
 
